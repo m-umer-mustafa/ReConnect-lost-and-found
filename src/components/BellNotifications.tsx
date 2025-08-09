@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { useLostFound } from '@/context/LostFoundContext';
+import { supabase } from '@/lib/supabaseClient';
 import { formatDistanceToNow } from 'date-fns';
 import {
   Popover,
@@ -20,86 +20,82 @@ export interface Notification {
 
 export const BellNotifications: React.FC = () => {
   const { user } = useAuth();
-  const { items, claims } = useLostFound();
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  /* ---------- derive notifications from state ---------- */
+  /* ---------- load + subscribe ---------- */
   useEffect(() => {
     if (!user) return;
 
-    const generated: Notification[] = [];
+    const load = async () => {
+      const { data } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      setNotifications((data ?? []).map(n => ({
+        id: n.id,
+        title: n.title,
+        body: n.body,
+        read: n.read,
+        createdAt: n.created_at,
+      })));
+    };
 
-    /* 1. Someone claimed my item */
-    items
-      .filter(i => i.userId === user.id)
-      .forEach(item => {
-        const claim = claims.find(c => c.itemId === item.id && c.status === 'pending');
-        if (claim) {
-          generated.push({
-            id: `claim-${item.id}-${claim.id}`,
-            title: 'New claim on your item',
-            body: `${claim.claimer.name} claimed “${item.title}”.`,
-            read: false,
-            createdAt: claim.createdAt,
-          });
-        }
-      });
+    load();
 
-    /* 2. My claim was accepted / rejected */
-    claims
-      .filter(c => c.claimerId === user.id)
-      .forEach(c => {
-        const item = items.find(i => i.id === c.itemId);
-        if (!item) return;
-        if (c.status !== 'pending') {
-          generated.push({
-            id: `respond-${c.id}`,
-            title: c.status === 'approved' ? 'Claim approved' : 'Claim rejected',
-            body: `Your claim on “${item.title}” was ${c.status}.`,
-            read: false,
-            createdAt: c.respondedAt || c.createdAt,
-          });
-        }
-      });
+    // realtime subscription
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        () => load()
+      )
+      .subscribe();
 
-    /* 3. Unclaimed for ≥ 7 days */
-    items
-      .filter(i => i.userId === user.id && i.status !== 'claimed')
-      .forEach(item => {
-        const age = Date.now() - new Date(item.createdAt).getTime();
-        if (age > 7 * 24 * 60 * 60 * 1000) {
-          generated.push({
-            id: `week-${item.id}`,
-            title: 'Still unclaimed',
-            body: `Your item “${item.title}” has not been claimed for a week.`,
-            read: false,
-            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          });
-        }
-      });
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
-    setNotifications(generated.reverse());
-  }, [items, claims, user]);
+  const unreadCount = notifications.filter(n => !n.read).length;
 
-  const unreadCount = useMemo(
-    () => notifications.filter(n => !n.read).length,
-    [notifications]
-  );
+  const markAllRead = async () => {
+    if (!user) return;
 
-  const markAllRead = () =>
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', user.id)
+      .eq('read', false);
+
+    if (!error) {
+      // Update local state immediately:
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, read: true }))
+      );
+    } else {
+      // Optionally handle error here (toast, etc.)
+      console.error('Failed to mark notifications as read:', error);
+    }
+  };
+
 
   /* ---------- render ---------- */
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative overflow-visible"  // <-- add this
+        >
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-background shadow-lg">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
+          <Bell className="h-5 w-5" />
         </Button>
       </PopoverTrigger>
 
@@ -111,29 +107,20 @@ export const BellNotifications: React.FC = () => {
         <div className="flex items-center justify-between p-4 border-b">
           <span className="font-semibold">Notifications</span>
           {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={markAllRead}
-              className="text-xs"
-            >
+            <Button variant="ghost" size="sm" className="text-xs" onClick={markAllRead}>
               Mark all read
             </Button>
           )}
         </div>
 
         {notifications.length === 0 ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            No new notifications
-          </div>
+          <div className="p-4 text-center text-sm text-muted-foreground">No notifications</div>
         ) : (
           <div className="divide-y">
             {notifications.map(n => (
               <div
                 key={n.id}
-                className={`p-3 text-sm ${
-                  !n.read ? 'bg-primary/5' : 'opacity-70'
-                }`}
+                className={`p-3 text-sm ${!n.read ? 'bg-primary/5' : 'opacity-70'}`}
               >
                 <p className="font-medium">{n.title}</p>
                 <p className="text-muted-foreground">{n.body}</p>

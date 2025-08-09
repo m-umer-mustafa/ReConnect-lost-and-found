@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Calendar, User, Eye, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { useLostFound } from '@/context/LostFoundContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
+import { supabase } from '@/lib/supabaseClient';
 
 interface ItemCardProps {
   item: LostFoundItem;
@@ -15,15 +16,15 @@ interface ItemCardProps {
 }
 
 export const ItemCard: React.FC<ItemCardProps> = ({ item, onClaim }) => {
-  const [showClaimModal, setShowClaimModal] = useState(false);
-  const { getUserClaims, removeClaim } = useLostFound();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [items, setItems] = useState([]);
+  const fetchItems = async () => {
+    const { data } = await supabase.from("items").select("*");
+    setItems(data);
+  };
 
-  const userClaims = getUserClaims();
-  const userClaimForItem = userClaims.find(claim => claim.itemId === item.id);
-  const isItemClaimed = item.status === 'claimed';
-  const canClaim = user && user.id !== item.userId && !isItemClaimed && !userClaimForItem;
+  if (!item) return null;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -33,25 +34,62 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onClaim }) => {
         return 'bg-warning text-warning-foreground';
       case 'lost':
         return 'bg-destructive text-destructive-foreground';
+      case 'approved':
+        return 'bg-success text-success-foreground';
+      case 'rejected':
+        return 'bg-destructive text-destructive-foreground';
+      case 'pending':
+        return 'bg-warning text-warning-foreground';
       default:
         return 'bg-secondary text-secondary-foreground';
     }
   };
 
-  const handleUnclaim = () => {
-    if (userClaimForItem) {
-      removeClaim(userClaimForItem.id);
-      toast({
-        title: "Claim Removed",
-        description: "Your claim has been removed from this item.",
-      });
+  /* ---------- helpers ---------- */
+  const getUserClaims = async () => {
+    if (!user) return [];
+    const { data } = await supabase
+      .from('claims')
+      .select('*')
+      .eq('claimer_id', user.id);
+    return data ?? [];
+  };
+
+  const removeClaim = async (claimId: string) => {
+    await supabase.from('claims').delete().eq('id', claimId);
+    toast({ title: 'Claim Removed', description: 'Your claim has been removed from this item.' });
+  };
+
+  const handleUnclaim = async () => {
+    const { data: claims } = await supabase
+      .from('claims')
+      .select('id')
+      .eq('item_id', item.id)
+      .eq('claimer_id', user!.id);
+    const claim = claims?.[0];
+    if (claim) {
+      await removeClaim(claim.id);
+      // Reset item status to original type (lost/found)
+      await supabase
+        .from('items')
+        .update({ status: item.type, updated_at: new Date().toISOString() })
+        .eq('id', item.id);
+      window.location.reload();
     }
   };
 
-  const handleClaimSubmit = (reason: string, uniqueIdentifiers: string) => {
-    // This will be handled by the ClaimModal through context
-    setShowClaimModal(false);
-  };
+  // handleClaimSubmit is now handled by the parent component
+
+  /* ---------- local state ---------- */
+  const [userClaims, setUserClaims] = useState<any[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    (async () => setUserClaims(await getUserClaims()))();
+  }, [user]);
+
+  const userClaimForItem = userClaims.find(c => c.item_id === item.id);
+  const isItemClaimed = item.status === 'claimed';
+  const canClaim = user && user.id !== item.userId && !isItemClaimed && !userClaimForItem;
 
   return (
     <div className="glass-card overflow-hidden hover:shadow-soft transition-all duration-300 group rounded-lg">
@@ -103,23 +141,29 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onClaim }) => {
             <Calendar className="h-4 w-4" />
             <span>
               {item.type === 'lost' ? 'Lost' : 'Found'} on{' '}
-              {new Date(item.dateLostFound).toLocaleDateString()}
+              {item.dateLostFound && !isNaN(new Date(item.dateLostFound).getTime()) 
+                ? new Date(item.dateLostFound).toLocaleDateString() 
+                : 'Unknown date'}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <User className="h-4 w-4" />
-            <span>{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}</span>
+            <span>
+              {item.createdAt && !isNaN(new Date(item.createdAt).getTime())
+                ? formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })
+                : 'Unknown time'}
+            </span>
           </div>
         </div>
 
-      {/* Action Button */}
+        {/* Action Button */}
       <div className="p-6 pt-4">
         {canClaim ? (
           <Button
             variant="hero"
             size="sm"
             className="w-full water-drop"
-            onClick={() => setShowClaimModal(true)}
+            onClick={() => onClaim?.(item.id)}
           >
             {item.type === 'lost' ? 'Found this item' : 'Claim this item'}
           </Button>
@@ -154,14 +198,6 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onClaim }) => {
         )}
       </div>
       </div>
-
-      {/* Claim Modal */}
-      <ClaimModal
-        isOpen={showClaimModal}
-        onClose={() => setShowClaimModal(false)}
-        onSubmit={handleClaimSubmit}
-        item={item}
-      />
     </div>
   );
 };

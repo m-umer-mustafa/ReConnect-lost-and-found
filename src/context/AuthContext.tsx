@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { AuthState, User } from '@/lib/types';
 
 interface AuthContextType extends AuthState {
@@ -11,108 +12,65 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be within AuthProvider');
+  return ctx;
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    isAuthenticated: false,
-  });
+  const [authState, setAuthState] = useState<AuthState>({ user: null, isAuthenticated: false });
   const [loading, setLoading] = useState(true);
 
+  // Listen to Supabase auth changes
   useEffect(() => {
-    // Check for existing session
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        setAuthState({
-          user,
-          isAuthenticated: true,
-        });
-      } catch (error) {
-        localStorage.removeItem('user');
-      }
-    }
-    setLoading(false);
+    // initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthState({
+        user: session?.user ?? null,
+        isAuthenticated: !!session,
+      });
+      setLoading(false);
+    });
+
+    // real-time subscription
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthState({
+        user: session?.user ?? null,
+        isAuthenticated: !!session,
+      });
+    });
+
+    return () => listener.subscription.unsubscribe();
   }, []);
 
-  const register = async (email: string, password: string, name: string): Promise<boolean> => {
-    try {
-      // Check if user already exists
-      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      if (existingUsers.find((u: User) => u.email === email)) {
-        throw new Error('User already exists with this email');
-      }
-
-      const user: User = {
-        id: Date.now().toString(),
-        email,
-        name,
-        createdAt: new Date().toISOString(),
-      };
-
-      // Save to users list
-      existingUsers.push(user);
-      localStorage.setItem('users', JSON.stringify(existingUsers));
-
-      // Set current user
-      localStorage.setItem('user', JSON.stringify(user));
-      setAuthState({
-        user,
-        isAuthenticated: true,
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Registration error:', error);
-      return false;
-    }
+  const login = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return !error;
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      const user = existingUsers.find((u: User) => u.email === email);
-      
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      localStorage.setItem('user', JSON.stringify(user));
-      setAuthState({
-        user,
-        isAuthenticated: true,
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('user');
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
+  const register = async (email: string, password: string, name: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: name } },
     });
+    return !error;
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{
-      ...authState,
-      login,
-      register,
-      logout,
-      loading,
-    }}>
+    <AuthContext.Provider
+      value={{
+        ...authState,
+        login,
+        register,
+        logout,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

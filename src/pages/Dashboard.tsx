@@ -1,5 +1,15 @@
-import React, { useState } from 'react';
-import { Edit, Trash2, Eye, Check, X, Mail, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+// src/pages/Dashboard.tsx
+import React, { useState, useEffect } from 'react';
+import {
+  Eye,
+  Check,
+  X,
+  CheckCircle2,
+  Edit,
+  Trash2,
+  Clock,
+  AlertCircle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,40 +19,149 @@ import { useToast } from '@/hooks/use-toast';
 import { EditItemModal } from '@/components/EditItemModal';
 import { formatDistanceToNow } from 'date-fns';
 import { Claim, LostFoundItem } from '@/lib/types';
+import { supabase } from '@/lib/supabaseClient';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { 
-    getUserItems, 
-    getUserClaims, 
-    getClaimsForUserItems, 
-    respondToClaim, 
-    deleteItem 
+  const {
+    fetchUserItems,
+    fetchUserClaims,
+    fetchClaimsForUserItems,
+    getUserItems,
+    getUserClaims,
+    getClaimsForUserItems,
+    respondToClaim,
+    deleteItem,
+    markItemAsReunited,
   } = useLostFound();
-  const { toast } = useToast();
-  const [editingItem, setEditingItem] = useState<LostFoundItem | null>(null);
 
   const userItems = getUserItems();
   const userClaims = getUserClaims();
   const claimsOnUserItems = getClaimsForUserItems();
 
-  const handleRespondToClaim = (claimId: string, status: 'approved' | 'rejected') => {
-    respondToClaim(claimId, status);
+  const { toast } = useToast();
+  const [editingItem, setEditingItem] = useState<LostFoundItem | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
     
+    const fetchData = async () => {
+      console.log('Fetching dashboard data for user:', user.id);
+      await fetchUserItems();
+      await fetchUserClaims();
+    };
+
+    fetchData();
+  }, [user, fetchUserItems, fetchUserClaims]);
+
+  useEffect(() => {
+    if (!user || userItems.length === 0) return;
+    
+    const fetchClaims = async () => {
+      await fetchClaimsForUserItems(userItems);
+    };
+    
+    fetchClaims();
+  }, [user, userItems, fetchClaimsForUserItems]);
+
+  const handleRespondToClaim = async (
+    claimId: string,
+    status: 'approved' | 'rejected'
+  ) => {
+    await respondToClaim(claimId, status);
     toast({
       title: status === 'approved' ? 'Claim Approved' : 'Claim Rejected',
-      description: status === 'approved' 
-        ? 'The claimer has been notified and can now contact you.'
-        : 'The claim has been rejected.',
+      description:
+        status === 'approved'
+          ? 'The claimer has been notified and can now contact you.'
+          : 'The claim has been rejected.',
     });
   };
 
-  const handleDeleteItem = (itemId: string) => {
-    deleteItem(itemId);
+  const handleDeleteItem = async (itemId: string) => {
+    await deleteItem(itemId);
     toast({
       title: 'Item Deleted',
       description: 'Your item has been removed from the database.',
     });
+  };
+
+  const handleUnclaim = async (itemId: string) => {
+    try {
+      // Find the claim for this item
+      const { data: claims } = await supabase
+        .from('claims')
+        .select('id')
+        .eq('item_id', itemId);
+
+      if (claims && claims.length > 0) {
+        // Delete the claim
+        await supabase.from('claims').delete().eq('id', claims[0].id);
+        
+        // Reset item status to original type
+        const item = userItems.find(i => i.id === itemId);
+        if (item) {
+          await supabase
+            .from('items')
+            .update({ status: item.type, updated_at: new Date().toISOString() })
+            .eq('id', itemId);
+        }
+
+        toast({
+          title: 'Claim Removed',
+          description: 'The claim has been removed from this item.',
+        });
+        
+        // Refresh the data
+        await fetchUserItems();
+        await fetchClaimsForUserItems(userItems);
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to remove the claim. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleMarkItemReunited = async (itemId: string, claimId: string) => {
+    try {
+      // Show confirmation
+      const confirmed = window.confirm(
+        'Are you sure you want to mark this item as reunited? This will permanently remove the item and all associated claims from the database, and notify all claimers.'
+      );
+      
+      if (!confirmed) return;
+
+      const success = await markItemAsReunited(itemId, claimId);
+      
+      if (success) {
+        toast({
+          title: 'Item Reunited!',
+          description: 'The item has been successfully marked as reunited. All claimers have been notified.',
+          variant: 'default',
+        });
+        
+        // Refresh the data
+        await fetchUserItems();
+        await fetchUserClaims();
+        await fetchClaimsForUserItems(userItems);
+      }  /* else {
+        toast({
+          title: 'Error',
+          description: 'Failed to mark item as reunited. Please try again.',
+          variant: 'destructive',
+        });
+      } */
+      
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to mark item as reunited. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -65,26 +184,33 @@ export const Dashboard: React.FC = () => {
   };
 
   const ItemCard: React.FC<{ item: LostFoundItem }> = ({ item }) => (
-    <div className="glass-card p-6 space-y-4">
+    <div className="glass-card p-4 space-y-3">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-          <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
+          <h3 className="font-semibold text-base mb-1">{item.title}</h3>
+          <p className="text-muted-foreground text-xs line-clamp-2 mb-2">
             {item.description}
           </p>
-          
-          <div className="flex flex-wrap gap-2 mb-3">
-            <Badge className={getStatusColor(item.status)}>
+          <div className="flex flex-wrap gap-1 mb-2">
+            <Badge className={`${getStatusColor(item.status)} text-xs px-2 py-0.5`}>
               {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
             </Badge>
-            <Badge variant="outline">{item.category}</Badge>
-            <Badge variant="outline">{item.type.charAt(0).toUpperCase() + item.type.slice(1)}</Badge>
+            <Badge variant="outline" className="text-xs px-2 py-0.5">{item.category}</Badge>
+            <Badge variant="outline" className="text-xs px-2 py-0.5">
+              {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+            </Badge>
           </div>
 
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p>📍 {item.location}</p>
-            <p>📅 {item.type === 'lost' ? 'Lost' : 'Found'} on {new Date(item.dateLostFound).toLocaleDateString()}</p>
-            <p>⏰ Reported {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}</p>
+          <div className="text-xs text-muted-foreground space-y-0.5">
+            <p className="truncate">📍 {item.location}</p>
+            <p>
+              📅 {item.type === 'lost' ? 'Lost' : 'Found'} on{' '}
+              {new Date(item.dateLostFound).toLocaleDateString()}
+            </p>
+            <p>
+              ⏰ Reported{' '}
+              {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+            </p>
           </div>
         </div>
 
@@ -92,122 +218,181 @@ export const Dashboard: React.FC = () => {
           <img
             src={item.images[0]}
             alt={item.title}
-            className="w-20 h-20 object-cover rounded-lg ml-4"
+            className="w-16 h-16 object-cover rounded-md ml-3 flex-shrink-0"
           />
         )}
       </div>
 
-      <div className="flex space-x-2 pt-4 border-t">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex-1"
+      <div className="flex space-x-1.5 pt-3 border-t">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 text-xs h-8"
           onClick={() => setEditingItem(item)}
         >
-          <Edit className="h-4 w-4 mr-2" />
+          <Edit className="h-3 w-3 mr-1" />
           Edit
         </Button>
-        <Button 
-          variant="destructive" 
-          size="sm" 
+        <Button
+          variant="destructive"
+          size="sm"
           onClick={() => handleDeleteItem(item.id)}
-          className="flex-1"
+          className="flex-1 text-xs h-8"
         >
-          <Trash2 className="h-4 w-4 mr-2" />
+          <Trash2 className="h-3 w-3 mr-1" />
           Delete
         </Button>
       </div>
     </div>
   );
 
-  const ClaimCard: React.FC<{ claim: Claim; isIncoming?: boolean }> = ({ 
-    claim, 
-    isIncoming = false 
+  const ClaimCard: React.FC<{ claim: Claim; isIncoming?: boolean }> = ({
+    claim,
+    isIncoming = false,
   }) => {
-    const item = userItems.find(i => i.id === claim.itemId);
-    
+    const item = userItems.find((i) => i.id === claim.itemId);
+    const claimerInfo = claim.claimer
+      ? { name: claim.claimer.name, email: claim.claimer.email }
+      : null;
+
     return (
-      <div className="glass-card p-6 space-y-4">
+      <div className="glass-card p-4 space-y-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-semibold">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <h3 className="font-semibold text-sm">
                 {isIncoming ? 'Claim on Your Item' : 'Your Claim'}
               </h3>
-              <Badge className={getStatusColor(claim.status)}>
+              <Badge className={`${getStatusColor(claim.status)} text-xs px-2 py-0.5`}>
                 {claim.status.charAt(0).toUpperCase() + claim.status.slice(1)}
               </Badge>
             </div>
 
             {item && (
-              <p className="text-sm text-muted-foreground mb-3">
-                Item: {item.title}
-              </p>
+              <p className="text-xs text-muted-foreground mb-1.5">Item: {item.title}</p>
             )}
 
-            <div className="space-y-2 text-sm">
+            <div className="space-y-1 text-xs">
               <div>
-                <p className="font-medium">Reason:</p>
-                <p className="text-muted-foreground">{claim.reason}</p>
-              </div>
-              
-              <div>
-                <p className="font-medium">Unique Identifiers:</p>
-                <p className="text-muted-foreground">{claim.uniqueIdentifiers}</p>
+                <p className="font-medium text-xs">Reason:</p>
+                <p className="text-muted-foreground text-xs line-clamp-2">{claim.reason}</p>
               </div>
 
-              <div className="flex items-center gap-4 text-muted-foreground">
-                <span>👤 {claim.claimer.name}</span>
-                <span>⏰ {formatDistanceToNow(new Date(claim.createdAt), { addSuffix: true })}</span>
+              <div>
+                <p className="font-medium text-xs">Unique Identifiers:</p>
+                <p className="text-muted-foreground text-xs line-clamp-2">{claim.uniqueIdentifiers}</p>
+              </div>
+
+              <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                <span>👤 {claimerInfo?.name || 'Unknown'}</span>
+                <span>
+                  ⏰{' '}
+                  {formatDistanceToNow(new Date(claim.createdAt), {
+                    addSuffix: true,
+                  })}
+                </span>
               </div>
             </div>
+
+            {/* New block to show item info for claims sent */}
+            {!isIncoming && item && (
+              <div className="mt-3 flex items-start gap-3 border-t pt-3">
+                {item.images.length > 0 && (
+                  <img
+                    src={item.images[0]}
+                    alt={item.title}
+                    className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+                  />
+                )}
+                <div>
+                  <h4 className="font-semibold text-sm">{item.title}</h4>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Actions for incoming claims */}
         {isIncoming && claim.status === 'pending' && (
-          <div className="flex space-x-2 pt-4 border-t">
+          <div className="flex space-x-1.5 pt-3 border-t">
             <Button
               variant="success"
               size="sm"
               onClick={() => handleRespondToClaim(claim.id, 'approved')}
-              className="flex-1"
+              className="flex-1 text-xs h-7"
             >
-              <Check className="h-4 w-4 mr-2" />
+              <Check className="h-3 w-3 mr-1" />
               Approve
             </Button>
             <Button
               variant="destructive"
               size="sm"
               onClick={() => handleRespondToClaim(claim.id, 'rejected')}
-              className="flex-1"
+              className="flex-1 text-xs h-7"
             >
-              <X className="h-4 w-4 mr-2" />
+              <X className="h-3 w-3 mr-1" />
               Reject
             </Button>
           </div>
         )}
 
-        {/* Contact info for approved claims */}
         {claim.status === 'approved' && item && (
-          <div className="bg-success/10 border border-success/20 rounded-lg p-4 mt-4">
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="h-5 w-5 text-success mt-0.5" />
+          <div className="bg-success/10 border-success/20 rounded-md p-3 mt-3">
+            <div className="flex items-start gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-success mt-0.5" />
               <div>
-                <p className="font-medium text-success mb-1">Claim Approved!</p>
-                <p className="text-sm text-muted-foreground">
-                  Contact the {isIncoming ? 'claimer' : 'item owner'} to arrange the return:
+                <p className="font-medium text-success text-sm mb-1">Claim Approved!</p>
+                <p className="text-xs text-muted-foreground">
+                  Contact the {isIncoming ? 'claimer' : 'item owner'} to arrange
+                  the return:
                 </p>
-                <p className="text-sm font-medium mt-1">
-                  📧 {isIncoming ? claim.claimer.email : item.userEmail}
+                <p className="text-xs font-medium mt-0.5">
+                  📧{' '}
+                  <a
+                    href={`mailto:${isIncoming ? claimerInfo?.email : item.userEmail}`}
+                    className="underline text-primary hover:text-primary/80"
+                  >
+                    {isIncoming ? claimerInfo?.email : item.userEmail}
+                  </a>
                 </p>
               </div>
             </div>
           </div>
         )}
+
+        {/* Add Item Reunited button for approved claims */}
+        {!isIncoming && claim.status === 'approved' && (
+          <div className="flex space-x-1.5 pt-3 border-t">
+            <Button
+              variant="success"
+              size="sm"
+              onClick={() => handleMarkItemReunited(claim.itemId, claim.id)}
+              className="flex-1 text-xs h-7 bg-success/10 hover:bg-success/20 text-success border-success/20"
+            >
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Item Reunited
+            </Button>
+          </div>
+        )}
+
+        {/* Add unclaim button for claims sent */}
+        {!isIncoming && claim.status !== 'approved' && (
+          <div className="flex space-x-1.5 pt-3 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleUnclaim(claim.itemId)}
+              className="flex-1 text-xs h-7 bg-destructive/10 hover:bg-destructive/20 text-destructive border-destructive/20"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Unclaim
+            </Button>
+          </div>
+        )}
       </div>
     );
   };
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -215,7 +400,8 @@ export const Dashboard: React.FC = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome back, {user?.name}! Manage your items and claims here.
+          Welcome back, {user?.user_metadata?.full_name || ''}! Manage your items
+          and claims here.
         </p>
       </div>
 
@@ -225,20 +411,22 @@ export const Dashboard: React.FC = () => {
           <div className="text-2xl font-bold text-primary">{userItems.length}</div>
           <div className="text-sm text-muted-foreground">Your Items</div>
         </div>
-        
+
         <div className="glass-card p-6 text-center">
           <div className="text-2xl font-bold text-warning">{userClaims.length}</div>
           <div className="text-sm text-muted-foreground">Claims Submitted</div>
         </div>
-        
+
         <div className="glass-card p-6 text-center">
-          <div className="text-2xl font-bold text-destructive">{claimsOnUserItems.length}</div>
+          <div className="text-2xl font-bold text-destructive">
+            {claimsOnUserItems.length}
+          </div>
           <div className="text-sm text-muted-foreground">Claims Received</div>
         </div>
-        
+
         <div className="glass-card p-6 text-center">
           <div className="text-2xl font-bold text-success">
-            {userItems.filter(item => item.status === 'claimed').length}
+            {userItems.filter((item) => item.status === 'claimed').length}
           </div>
           <div className="text-sm text-muted-foreground">Items Reunited</div>
         </div>
@@ -264,8 +452,8 @@ export const Dashboard: React.FC = () => {
         {/* My Items */}
         <TabsContent value="items" className="space-y-6">
           {userItems.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {userItems.map(item => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+              {userItems.map((item) => (
                 <ItemCard key={item.id} item={item} />
               ))}
             </div>
@@ -278,7 +466,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-muted-foreground mb-4">
                 Report your first lost or found item to get started.
               </p>
-              <Button variant="hero" onClick={() => window.location.href = '/report'}>
+              <Button variant="hero" onClick={() => (window.location.href = '/report')}>
                 Report an Item
               </Button>
             </div>
@@ -288,8 +476,8 @@ export const Dashboard: React.FC = () => {
         {/* Claims Sent */}
         <TabsContent value="claims-sent" className="space-y-6">
           {userClaims.length > 0 ? (
-            <div className="space-y-6">
-              {userClaims.map(claim => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+              {userClaims.map((claim) => (
                 <ClaimCard key={claim.id} claim={claim} isIncoming={false} />
               ))}
             </div>
@@ -302,7 +490,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-muted-foreground mb-4">
                 When you find items that might be yours, your claims will appear here.
               </p>
-              <Button variant="outline" onClick={() => window.location.href = '/browse'}>
+              <Button variant="outline" onClick={() => (window.location.href = '/browse')}>
                 Browse Items
               </Button>
             </div>
@@ -312,8 +500,8 @@ export const Dashboard: React.FC = () => {
         {/* Claims Received */}
         <TabsContent value="claims-received" className="space-y-6">
           {claimsOnUserItems.length > 0 ? (
-            <div className="space-y-6">
-              {claimsOnUserItems.map(claim => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+              {claimsOnUserItems.map((claim) => (
                 <ClaimCard key={claim.id} claim={claim} isIncoming={true} />
               ))}
             </div>
@@ -323,8 +511,8 @@ export const Dashboard: React.FC = () => {
                 <AlertCircle className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">No claims received</h3>
-              <p className="text-muted-foreground">
-                When people claim your reported items, they will appear here.
+              <p className="text-muted-foreground mb-4">
+                When others claim your items, those claims will appear here.
               </p>
             </div>
           )}

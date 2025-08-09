@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLostFound } from '@/context/LostFoundContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/context/AuthContext';
 
 const CATEGORIES = [
   'Electronics',
@@ -26,6 +28,7 @@ export const ReportItem: React.FC = () => {
   const { addItem } = useLostFound();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
@@ -61,6 +64,8 @@ export const ReportItem: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return toast({ title: 'Not signed in', variant: 'destructive' });
+    
     if (!formData.title.trim() || !formData.description.trim() || !formData.category || !formData.location.trim() || !formData.dateLostFound) {
       toast({
         title: "Validation Error",
@@ -72,20 +77,26 @@ export const ReportItem: React.FC = () => {
 
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
-      addItem({
-        ...formData,
-        images,
+      const { data, error } = await supabase.from('items').insert({
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        location: formData.location,
+        date_lost_found: formData.dateLostFound,
         status: formData.type,
-        dateReported: new Date().toISOString(),
-        contactEmail: formData.contactEmail,
-        contactPhone: formData.contactPhone,
-      });
+        type: formData.type,
+        images: images,
+        user_id: user.id,
+        user_email: user.email,
+        user_name: user.user_metadata?.full_name,
+        contact_email: formData.contactEmail,
+        contact_phone: formData.contactPhone,
+      }).select().single();
+
+      if (error) throw error;
 
       toast({
-        title: "Item Reported Successfully!",
-        description: `Your ${formData.type} item "${formData.title}" has been added to the database.`,
+        title: "Item Reported Successfully!"
       });
 
       navigate('/dashboard');

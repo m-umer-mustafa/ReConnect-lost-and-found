@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 interface AuthFormProps {
   onSuccess: () => void;
@@ -21,57 +23,128 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     name: '',
   });
 
-  const { login, register } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) navigate('/', { replace: true });
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      let success = false;
-      
       if (isLogin) {
-        success = await login(formData.email, formData.password);
-        if (!success) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (error) {
+          if (error.message.toLowerCase().includes('email not confirmed')) {
+            toast({
+              title: 'Email Not Confirmed',
+              description: 'Please check your inbox and confirm your email address.',
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: 'Login Failed',
+              description: error.message,
+              variant: 'destructive',
+            });
+          }
+        } else if (data?.user) {
           toast({
-            title: "Login Failed",
-            description: "Invalid email or password. Please try again.",
-            variant: "destructive",
+            title: 'Welcome Back',
+            description: "You've successfully signed in.",
+          });
+          onSuccess();
+          navigate('/', { replace: true });
+        } else {
+          toast({
+            title: 'Login Failed',
+            description: 'Please check your email and password.',
+            variant: 'destructive',
           });
         }
       } else {
         if (!formData.name.trim()) {
           toast({
-            title: "Validation Error",
-            description: "Please enter your full name.",
-            variant: "destructive",
+            title: 'Validation Error',
+            description: 'Please enter your full name.',
+            variant: 'destructive',
           });
           setLoading(false);
           return;
         }
-        success = await register(formData.email, formData.password, formData.name);
-        if (!success) {
-          toast({
-            title: "Registration Failed",
-            description: "An account with this email already exists.",
-            variant: "destructive",
-          });
-        }
-      }
 
-      if (success) {
-        toast({
-          title: isLogin ? "Welcome Back!" : "Welcome to ReConnect!",
-          description: isLogin ? "You've successfully signed in." : "Your account has been created successfully.",
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: { full_name: formData.name },
+          },
         });
-        onSuccess();
+
+        const { data: existing } = await supabase
+          .from('auth.users')
+          .select('email')
+          .eq('email', formData.email)
+          .single();
+
+        if (existing) {
+          toast({ title: 'Already registered', description: 'This email is already in use.', variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
+
+        if (error) {
+          if (error.message.toLowerCase().includes('user already registered')) {
+            toast({
+              title: 'User Already Exists',
+              description:
+                'This email is already registered. Please sign in or confirm your email.',
+              variant: 'destructive',
+            });
+
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+              email: formData.email,
+              password: formData.password,
+            });
+
+            if (
+              signInError &&
+              signInError.message.toLowerCase().includes('email not confirmed')
+            ) {
+              toast({
+                title: 'Email Not Confirmed',
+                description: 'Please check your inbox and confirm your email address.',
+              });
+            }
+          } else {
+            toast({
+              title: 'Registration Failed',
+              description: error.message,
+              variant: 'destructive',
+            });
+          }
+        } else {
+          toast({
+            title: 'Confirm Your Email',
+            description: 'Check your inbox and confirm your email to complete signup.',
+          });
+          onSuccess();
+          navigate('/', { replace: true });
+        }
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Something went wrong. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -87,9 +160,12 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     }, 250);
   };
 
+  // Auth.tsx  (or App.tsx)
+  <AuthForm onSuccess={() => navigate('/', { replace: true })} />
+
   return (
     <div className="w-full max-w-md mx-auto">
-      <div 
+      <div
         className={`glass-card p-8 space-y-6 transition-all duration-500 ease-out ${
           isSliding ? 'scale-95 opacity-90' : 'scale-100 opacity-100'
         }`}
@@ -98,7 +174,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           borderRadius: 'var(--radius-lg)',
         }}
       >
-        {/* Header with sliding animation */}
         <div className="text-center space-y-2 overflow-hidden">
           <div
             className={`transition-transform duration-500 ease-out ${
@@ -109,28 +184,24 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
               {isLogin ? 'Welcome Back' : 'Join ReConnect'}
             </h1>
             <p className="text-muted-foreground">
-              {isLogin 
-                ? 'Sign in to your account to continue' 
+              {isLogin
+                ? 'Sign in to your account to continue'
                 : 'Create an account to start helping others'}
             </p>
           </div>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name field for registration */}
           {!isLogin && (
             <div className="space-y-2 animate-fade-in">
-              <Label htmlFor="name" className="text-sm font-medium">
-                Full Name
-              </Label>
+              <Label htmlFor="name">Full Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="name"
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                   className="pl-10"
                   placeholder="Enter your full name"
                   required={!isLogin}
@@ -139,18 +210,15 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
             </div>
           )}
 
-          {/* Email field */}
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium">
-              Email Address
-            </Label>
+            <Label htmlFor="email">Email Address</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                 className="pl-10"
                 placeholder="Enter your email"
                 required
@@ -158,18 +226,15 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
             </div>
           </div>
 
-          {/* Password field */}
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-medium">
-              Password
-            </Label>
+            <Label htmlFor="password">Password</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
-                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                 className="pl-10 pr-10"
                 placeholder="Enter your password"
                 required
@@ -179,7 +244,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
@@ -191,14 +256,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
             </div>
           </div>
 
-          {/* Submit button */}
-          <Button
-            type="submit"
-            variant="hero"
-            size="lg"
-            className="w-full"
-            disabled={loading}
-          >
+          <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
@@ -210,10 +268,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           </Button>
         </form>
 
-        {/* Toggle mode */}
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}
+            {isLogin ? "Don't have an account?" : 'Already have an account?'}
           </p>
           <Button
             type="button"
@@ -228,3 +285,5 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     </div>
   );
 };
+
+export default AuthForm;

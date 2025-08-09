@@ -1,32 +1,25 @@
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  createdAt: string;
-}
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+
+export type User = SupabaseUser; 
 
 export interface LostFoundItem {
-  id: string;
+  id: string; 
   title: string;
-  description: string;
-  category: string;
-  location: string;
+  description?: string;
+  category?: string;
+  location?: string;
   dateReported: string;
   dateLostFound: string;
-  status: 'lost' | 'found' | 'claimed' | 'pending_claim' | 'approved_claim';
+  status: 'lost' | 'found' | 'claimed';
   type: 'lost' | 'found';
   images: string[];
   userId: string;
   userEmail: string;
-  userName: string;
-  contactEmail: string;
+  userName?: string; 
+  contactEmail?: string; 
   contactPhone?: string;
-  createdAt: string;
+  createdAt: string; 
   updatedAt: string;
-  claimCount?: number;
-  approvedClaimerId?: string;
-  approvedClaimerEmail?: string;
-  approvedClaimerName?: string;
 }
 
 export interface Claim {

@@ -6,6 +6,7 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
+// ProtectedRoute.tsx
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -17,9 +18,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
+  // If not authenticated, go to login
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
   }
 
+  // Authenticated → render child routes
   return <>{children}</>;
-};
+}
