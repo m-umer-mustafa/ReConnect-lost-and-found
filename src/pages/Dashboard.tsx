@@ -20,6 +20,7 @@ import { EditItemModal } from '@/components/EditItemModal';
 import { formatDistanceToNow } from 'date-fns';
 import { Claim, LostFoundItem } from '@/lib/types';
 import { supabase } from '@/lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -41,6 +42,7 @@ export const Dashboard: React.FC = () => {
 
   const { toast } = useToast();
   const [editingItem, setEditingItem] = useState<LostFoundItem | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) return;
@@ -466,7 +468,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-muted-foreground mb-4">
                 Report your first lost or found item to get started.
               </p>
-              <Button variant="hero" onClick={() => (window.location.href = '/report')}>
+              <Button variant="hero" onClick={() => navigate('/report')}>
                 Report an Item
               </Button>
             </div>
@@ -490,7 +492,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-muted-foreground mb-4">
                 When you find items that might be yours, your claims will appear here.
               </p>
-              <Button variant="outline" onClick={() => (window.location.href = '/browse')}>
+              <Button variant="outline" onClick={() => navigate('/browse')}>
                 Browse Items
               </Button>
             </div>

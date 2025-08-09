@@ -1,10 +1,20 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router';
 import { AuthForm } from '@/components/AuthForm';
 import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export const Auth: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Redirect to the page the user intended to visit before authentication
+      navigate(location.state?.from?.pathname || '/');
+    }
+  }, [isAuthenticated, location]);
 
   if (loading) {
     return (
@@ -73,7 +83,7 @@ export const Auth: React.FC = () => {
 
         {/* Right side - Auth form */}
         <div className="flex items-center justify-center">
-          <AuthForm onSuccess={() => {}} />
+          <AuthForm onSuccess={() => navigate(location.state?.from?.pathname || '/')} />
         </div>
       </div>
     </div>
