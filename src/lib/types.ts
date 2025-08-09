@@ -20,8 +20,6 @@ export interface LostFoundItem {
   contactPhone?: string;
   createdAt: string; 
   updatedAt: string;
-  claimStatus?: 'pending' | 'approved' | 'rejected';
-  claimId?: string;
 }
 
 export interface Claim {

@@ -9,14 +9,15 @@ import { BellNotifications } from '@/components/BellNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export const Header: React.FC = () => {
-  const { user, logout:authLogout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    authLogout();
+    logout();
+    navigate('/');
     setIsMenuOpen(false);
   };
 
