@@ -86,44 +86,27 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           password: formData.password,
           options: {
             data: { full_name: formData.name },
+            emailRedirectTo: window.location.origin,
           },
         });
 
-        const { data: existing } = await supabase
-          .from('auth.users')
-          .select('email')
-          .eq('email', formData.email)
-          .single();
-
-        if (existing) {
-          toast({ title: 'Already registered', description: 'This email is already in use.', variant: 'destructive' });
-          setLoading(false);
-          return;
-        }
-
         if (error) {
-          if (error.message.toLowerCase().includes('user already registered')) {
+          console.error('Registration error:', error);
+          const errorMessage = error.message.toLowerCase();
+          
+          // Handle various duplicate email error messages
+          if (errorMessage.includes('user already registered') || 
+              errorMessage.includes('email already exists') ||
+              errorMessage.includes('already been taken') ||
+              errorMessage.includes('duplicate key') ||
+              errorMessage.includes('unique constraint') ||
+              errorMessage.includes('user already exists') ||
+              errorMessage.includes('already registered')) {
             toast({
-              title: 'User Already Exists',
-              description:
-                'This email is already registered. Please sign in or confirm your email.',
+              title: 'Email Already Registered',
+              description: 'This email is already registered. Please sign in instead.',
               variant: 'destructive',
             });
-
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-              email: formData.email,
-              password: formData.password,
-            });
-
-            if (
-              signInError &&
-              signInError.message.toLowerCase().includes('email not confirmed')
-            ) {
-              toast({
-                title: 'Email Not Confirmed',
-                description: 'Please check your inbox and confirm your email address.',
-              });
-            }
           } else {
             toast({
               title: 'Registration Failed',
@@ -131,13 +114,28 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
               variant: 'destructive',
             });
           }
+        } else if (data.user) {
+          // Check if user was actually created or if it was just a confirmation email
+          if (data.user.identities && data.user.identities.length === 0) {
+            toast({
+              title: 'Email Already Registered',
+              description: 'This email is already registered. Please sign in instead.',
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: 'Confirm Your Email',
+              description: 'Check your inbox and confirm your email to complete signup.',
+            });
+            onSuccess();
+            navigate('/', { replace: true });
+          }
         } else {
           toast({
-            title: 'Confirm Your Email',
-            description: 'Check your inbox and confirm your email to complete signup.',
+            title: 'Registration Failed',
+            description: 'Unable to create account. Please try again.',
+            variant: 'destructive',
           });
-          onSuccess();
-          navigate('/', { replace: true });
         }
       }
     } catch (error) {
