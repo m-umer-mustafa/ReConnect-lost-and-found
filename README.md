@@ -1,6 +1,3 @@
-Here’s a clean and professional `README.md` for your **Lost & Found System** with all the features and deployment details you described, styled to match modern GitHub projects:
-
----
 
 ```md
 # 🧳 Lost & Found Portal
@@ -62,8 +59,8 @@ src/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/your-username/lost-and-found.git
-cd lost-and-found
+git clone https://github.com/m-umer-mustafa/ReConnect-lost-and-found
+cd ReConnect-lost-and-found
 ````
 
 ### 2. Install dependencies
