@@ -254,7 +254,13 @@ export const LostFoundProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       .insert({ ...itemData, user_id: user.id, user_email: user.email, user_name: user.user_metadata?.full_name })
       .select()
       .single();
-    if (data) setState((s) => ({ ...s, items: [mapSupabaseItem(data), ...s.items] }));
+    
+    if (data) {
+      setState((s) => ({ ...s, items: [mapSupabaseItem(data), ...s.items] }));
+      
+      // Refresh data to ensure UI is updated
+      await Promise.all([loadItems(), loadClaims()]);
+    }
   };
 
   const updateItem = async (id: string, updates: Partial<LostFoundItem>) => {
@@ -264,11 +270,16 @@ export const LostFoundProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       .eq('id', id)
       .select()
       .single();
-    if (data)
+    
+    if (data) {
       setState((s) => ({
         ...s,
         items: s.items.map((i) => (i.id === id ? mapSupabaseItem(data) : i)),
       }));
+      
+      // Refresh data to ensure UI is updated
+      await Promise.all([loadItems(), loadClaims()]);
+    }
   };
 
   const deleteItem = async (id: string) => {
@@ -278,6 +289,9 @@ export const LostFoundProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       items: s.items.filter((i) => i.id !== id),
       claims: s.claims.filter((c) => c.itemId !== id),
     }));
+    
+    // Refresh data to ensure UI is updated
+    await Promise.all([loadItems(), loadClaims()]);
   };
 
   const submitClaim = async (
@@ -298,7 +312,14 @@ export const LostFoundProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       })
       .select()
       .single();
-    if (data) setState((s) => ({ ...s, claims: [mapSupabaseClaim(data), ...s.claims] }));
+    
+    if (data) {
+      // Update local state
+      setState((s) => ({ ...s, claims: [mapSupabaseClaim(data), ...s.claims] }));
+      
+      // Refresh data to ensure UI is updated
+      await Promise.all([loadItems(), loadClaims()]);
+    }
   };
 
   const respondToClaim = async (claimId: string, status: 'approved' | 'rejected') => {
@@ -413,6 +434,9 @@ export const LostFoundProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       }
     }
+    
+    // Refresh data to ensure UI is updated
+    await Promise.all([loadItems(), loadClaims()]);
   };
 
   const markItemAsReunited = async (itemId: string, claimId: string) => {

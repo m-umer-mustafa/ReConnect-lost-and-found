@@ -1,4 +1,3 @@
-// src/pages/Dashboard.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Eye,
@@ -436,18 +435,24 @@ export const Dashboard: React.FC = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="items" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="items" className="flex items-center gap-2">
-            <Eye className="h-4 w-4" />
-            My Items ({userItems.length})
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-0 h-auto sm:h-10 p-1">
+          <TabsTrigger value="items" className="flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-1.5">
+            <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">My Items</span>
+            <span className="xs:hidden">Items</span>
+            <span className="text-xs">({userItems.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="claims-sent" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Claims Sent ({userClaims.length})
+          <TabsTrigger value="claims-sent" className="flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-1.5">
+            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Claims Sent</span>
+            <span className="xs:hidden">Sent</span>
+            <span className="text-xs">({userClaims.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="claims-received" className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            Claims Received ({claimsOnUserItems.length})
+          <TabsTrigger value="claims-received" className="flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-1.5">
+            <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Claims Received</span>
+            <span className="xs:hidden">Received</span>
+            <span className="text-xs">({claimsOnUserItems.length})</span>
           </TabsTrigger>
         </TabsList>
 
