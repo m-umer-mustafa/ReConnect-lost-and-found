@@ -83,6 +83,7 @@ export const ReportItem: React.FC = () => {
         category: formData.category,
         location: formData.location,
         date_lost_found: formData.dateLostFound,
+        // Initial status matches the report type (lost/found)
         status: formData.type,
         type: formData.type,
         images: images,
