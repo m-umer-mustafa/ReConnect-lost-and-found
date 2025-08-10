@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, ImageIcon, Calendar, MapPin, Tag, FileText } from 'lucide-react';
+import { X, Upload, Tag, FileText, Calendar, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { LostFoundItem } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { validateItemName, validateDescription, validateLocation } from '@/utils/validation';
+import { supabase } from '@/lib/supabaseClient'; 
 
 interface EditItemModalProps {
   item: LostFoundItem;
@@ -24,7 +26,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ item, isOpen, onCl
   const { updateItem } = useLostFound();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title: item.title,
     description: item.description,
@@ -38,11 +40,36 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ item, isOpen, onCl
   });
 
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const categories = [
-    'Electronics', 'Clothing', 'Accessories', 'Bags', 'Keys', 
-    'Documents', 'Jewelry', 'Books', 'Sports Equipment', 'Other'
+    'Electronics',
+    'Documents',
+    'Clothing',
+    'Jewelry',
+    'Bags & Wallets',
+    'Keys',
+    'Sports Equipment',
+    'Books',
+    'Personal Items',
+    'Other'
   ];
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    const titleError = validateItemName(formData.title);
+    if (titleError) newErrors.title = titleError;
+
+    const descError = validateDescription(formData.description);
+    if (descError) newErrors.description = descError;
+
+    const locationError = validateLocation(formData.location);
+    if (locationError) newErrors.location = locationError;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -60,26 +87,72 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ item, isOpen, onCl
     }
   };
 
+  // Upload single image file to Supabase storage and return public URL
+  const uploadImageToSupabase = async (file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const filePath = fileName;
+
+    const { error } = await supabase.storage
+      .from('lostfound-images')
+      .upload(filePath, file);
+
+    if (error) throw error;
+
+    const publicUrlResponse = supabase.storage.from('lostfound-images').getPublicUrl(filePath);
+    if (!publicUrlResponse.data) {
+      throw new Error('Failed to get public URL for uploaded image');
+    }
+    if ('error' in publicUrlResponse && publicUrlResponse.error) {
+      throw publicUrlResponse.error;
+    }
+
+    const publicURL = publicUrlResponse.data.publicUrl;
+
+    return publicURL;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the errors in the form.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Simulate image upload (in real app, upload to cloud storage)
-      const uploadedImages = selectedImages.map(file => URL.createObjectURL(file));
-      
+      // Upload all new selected images to Supabase Storage and get URLs
+      const uploadedImageUrls = [];
+      for (const file of selectedImages) {
+        const url = await uploadImageToSupabase(file);
+        uploadedImageUrls.push(url);
+      }
+
       const updatedItem = {
         ...formData,
-        images: [...formData.images, ...uploadedImages],
+        images: [...formData.images, ...uploadedImageUrls],
         dateLostFound: formData.dateLostFound.toISOString(),
       };
 
-      updateItem(item.id, updatedItem);
+      await updateItem(item.id, updatedItem);
 
       toast({
         title: "Item Updated",
         description: "Your item has been updated successfully.",
       });
+
+      setSelectedImages([]);
+
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...uploadedImageUrls],
+      }));
 
       onClose();
     } catch (error) {
@@ -88,6 +161,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ item, isOpen, onCl
         description: "Failed to update item. Please try again.",
         variant: "destructive",
       });
+      console.error("Update item error:", error);
     } finally {
       setLoading(false);
     }
@@ -108,7 +182,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ item, isOpen, onCl
             <Label className="text-sm font-medium">Item Type</Label>
             <Select
               value={formData.type}
-              onValueChange={(value: 'lost' | 'found') => 
+              onValueChange={(value: 'lost' | 'found') =>
                 setFormData(prev => ({ ...prev, type: value }))
               }
             >
@@ -132,11 +206,20 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ item, isOpen, onCl
               <Input
                 id="edit-title"
                 value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value.substring(0, 100) }))}
                 className="pl-10"
                 placeholder="What item are you reporting?"
+                maxLength={100}
                 required
               />
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className={errors.title ? 'text-destructive' : 'text-muted-foreground'}>
+                {errors.title || ''}
+              </span>
+              <span className="text-muted-foreground">
+                {formData.title.length}/100
+              </span>
             </div>
           </div>
 
@@ -150,11 +233,20 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ item, isOpen, onCl
               <Textarea
                 id="edit-description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value.substring(0, 1000) }))}
                 className="pl-10 min-h-[100px] resize-none"
                 placeholder="Provide detailed description including color, size, brand, etc."
+                maxLength={1000}
                 required
               />
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className={errors.description ? 'text-destructive' : 'text-muted-foreground'}>
+                {errors.description || ''}
+              </span>
+              <span className="text-muted-foreground">
+                {formData.description.length}/1000
+              </span>
             </div>
           </div>
 
@@ -188,11 +280,20 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ item, isOpen, onCl
                 <Input
                   id="edit-location"
                   value={formData.location}
-                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value.substring(0, 200) }))}
                   className="pl-10"
                   placeholder="Where was it lost/found?"
+                  maxLength={200}
                   required
                 />
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className={errors.location ? 'text-destructive' : 'text-muted-foreground'}>
+                  {errors.location || ''}
+                </span>
+                <span className="text-muted-foreground">
+                  {formData.location.length}/200
+                </span>
               </div>
             </div>
           </div>
@@ -263,7 +364,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ item, isOpen, onCl
             <Label className="text-sm font-medium">
               Images (Optional, max 5)
             </Label>
-            
+
             {/* Existing Images */}
             {formData.images.length > 0 && (
               <div>

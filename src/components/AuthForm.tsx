@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { PasswordStrengthBar } from './PasswordStrengthBar';
 
 interface AuthFormProps {
   onSuccess: () => void;
@@ -17,6 +18,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [isSliding, setIsSliding] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -75,6 +77,16 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           toast({
             title: 'Validation Error',
             description: 'Please enter your full name.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (formData.password.length < 8) {
+          toast({
+            title: 'Validation Error',
+            description: 'Password must be at least 8 characters long.',
             variant: 'destructive',
           });
           setLoading(false);
@@ -149,17 +161,56 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!formData.email) {
+      toast({
+        title: 'Email Required',
+        description: 'Please enter your email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+
+      if (error) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Reset Email Sent',
+          description: 'Check your inbox for a password reset link.',
+        });
+        setShowForgotPassword(false);
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleMode = () => {
     setIsSliding(true);
     setTimeout(() => {
       setIsLogin(!isLogin);
       setFormData({ email: '', password: '', name: '' });
+      setShowForgotPassword(false);
       setIsSliding(false);
     }, 250);
   };
 
-  // Auth.tsx  (or App.tsx)
-  <AuthForm onSuccess={() => navigate('/', { replace: true })} />
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -168,8 +219,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           isSliding ? 'scale-95 opacity-90' : 'scale-100 opacity-100'
         }`}
         style={{
-          minHeight: isLogin ? '420px' : '500px',
-          borderRadius: 'var(--radius-lg)',
+          minHeight: showForgotPassword ? '350px' : isLogin ? '480px' : '580px',
+          borderRadius: '1rem',
         }}
       >
         <div className="text-center space-y-2 overflow-hidden">
@@ -234,9 +285,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
                 value={formData.password}
                 onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                 className="pl-10 pr-10"
-                placeholder="Enter your password"
+                 placeholder="Enter your password"
                 required
-                minLength={6}
+                minLength={8}
               />
               <Button
                 type="button"
@@ -252,33 +303,79 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
                 )}
               </Button>
             </div>
+            {!isLogin && <PasswordStrengthBar password={formData.password} />}
           </div>
 
-          <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <>
-                {isLogin ? 'Sign In' : 'Create Account'}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </>
-            )}
-          </Button>
+          {isLogin && !showForgotPassword && (
+            <div className="text-center">
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-sm text-muted-foreground hover:text-primary"
+              >
+                Forgot your password?
+              </Button>
+            </div>
+          )}
+
+          {showForgotPassword ? (
+            <div className="space-y-4">
+              <Button
+                type="button"
+                onClick={handleForgotPassword}
+                variant="outline"
+                size="lg"
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                ) : (
+                  <>
+                    Send Reset Email
+                    <RotateCcw className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowForgotPassword(false)}
+                className="w-full"
+              >
+                Back to Login
+              </Button>
+            </div>
+          ) : (
+            <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  {isLogin ? 'Sign In' : 'Create Account'}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          )}
         </form>
 
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            {isLogin ? "Don't have an account?" : 'Already have an account?'}
-          </p>
-          <Button
-            type="button"
-            variant="link"
-            onClick={toggleMode}
-            className="text-primary font-semibold hover:underline"
-          >
-            {isLogin ? 'Sign up here' : 'Sign in here'}
-          </Button>
-        </div>
+        {!showForgotPassword && (
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              {isLogin ? "Don't have an account?" : 'Already have an account?'}
+            </p>
+            <Button
+              type="button"
+              variant="link"
+              onClick={toggleMode}
+              className="text-primary font-semibold hover:underline"
+            >
+              {isLogin ? 'Sign up here' : 'Sign in here'}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

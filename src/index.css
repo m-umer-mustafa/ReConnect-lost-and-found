@@ -161,7 +161,7 @@
 
   /* Glassmorphism Card */
   .glass-card {
-    @apply backdrop-blur-sm bg-card/80 border border-border/50;
+    @apply backdrop-blur-sm bg-card/80 border border-border/50 rounded-xl;
     box-shadow: var(--shadow-card);
   }
 

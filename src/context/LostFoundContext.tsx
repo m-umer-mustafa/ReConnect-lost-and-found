@@ -263,24 +263,41 @@ export const LostFoundProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const toSnakeCaseKeys = (obj: any) => {
+    const newObj: any = {};
+    Object.entries(obj).forEach(([key, val]) => {
+      const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      newObj[snakeKey] = val;
+    });
+    return newObj;
+  };
+
   const updateItem = async (id: string, updates: Partial<LostFoundItem>) => {
-    const { data } = await supabase
+    const updatesSnake = toSnakeCaseKeys(updates);
+
+    const { data, error } = await supabase
       .from('items')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({ ...updatesSnake, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single();
-    
+
+    if (error) {
+      console.error('Update item error:', error);
+      return;
+    }
+
     if (data) {
       setState((s) => ({
         ...s,
         items: s.items.map((i) => (i.id === id ? mapSupabaseItem(data) : i)),
       }));
-      
-      // Refresh data to ensure UI is updated
+
+      // Refresh data if needed
       await Promise.all([loadItems(), loadClaims()]);
     }
   };
+
 
   const deleteItem = async (id: string) => {
     await supabase.from('items').delete().eq('id', id);

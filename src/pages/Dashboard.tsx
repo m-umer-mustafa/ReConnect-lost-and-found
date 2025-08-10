@@ -1,3 +1,4 @@
+// src/pages/Dashboard.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Eye,
@@ -8,6 +9,7 @@ import {
   Trash2,
   Clock,
   AlertCircle,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,10 +18,21 @@ import { useLostFound } from '@/context/LostFoundContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { EditItemModal } from '@/components/EditItemModal';
+import { SettingsModal } from '@/components/SettingsModal';
 import { formatDistanceToNow } from 'date-fns';
 import { Claim, LostFoundItem } from '@/lib/types';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -41,6 +54,10 @@ export const Dashboard: React.FC = () => {
 
   const { toast } = useToast();
   const [editingItem, setEditingItem] = useState<LostFoundItem | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showReunitedDialog, setShowReunitedDialog] = useState(false);
+  const [reunitedItemId, setReunitedItemId] = useState<string | null>(null);
+  const [reunitedClaimId, setReunitedClaimId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -69,15 +86,42 @@ export const Dashboard: React.FC = () => {
     claimId: string,
     status: 'approved' | 'rejected'
   ) => {
-    await respondToClaim(claimId, status);
-    toast({
-      title: status === 'approved' ? 'Claim Approved' : 'Claim Rejected',
-      description:
-        status === 'approved'
-          ? 'The claimer has been notified and can now contact you.'
-          : 'The claim has been rejected.',
-    });
+    try {
+      if (status === 'rejected') {
+        // Delete claim from Supabase
+        const { error } = await supabase.from('claims').delete().eq('id', claimId);
+        if (error) throw error;
+
+        toast({
+          title: 'Claim Rejected',
+          description: 'The claim has been rejected and removed from the system.',
+        });
+
+        // Refetch user claims and claims on user items to update dashboard
+        await fetchUserClaims();
+        await fetchClaimsForUserItems(userItems);
+      } else {
+        // Approve claim (existing logic)
+        await respondToClaim(claimId, status);
+
+        toast({
+          title: 'Claim Approved',
+          description: 'The claimer has been notified and can now contact you.',
+        });
+
+        // Refetch user claims and claims on user items to update dashboard
+        await fetchUserClaims();
+        await fetchClaimsForUserItems(userItems);
+      }
+    } catch (error) {
+      /*toast({
+        title: 'Error',
+        description: 'Failed to respond to claim. Please try again.',
+        variant: 'destructive',
+      });*/
+    }
   };
+
 
   const handleDeleteItem = async (itemId: string) => {
     await deleteItem(itemId);
@@ -118,24 +162,25 @@ export const Dashboard: React.FC = () => {
         await fetchClaimsForUserItems(userItems);
       }
     } catch (error) {
-      toast({
+      /*toast({
         title: 'Error',
         description: 'Failed to remove the claim. Please try again.',
         variant: 'destructive',
-      });
+      });*/
     }
   };
 
   const handleMarkItemReunited = async (itemId: string, claimId: string) => {
-    try {
-      // Show confirmation
-      const confirmed = window.confirm(
-        'Are you sure you want to mark this item as reunited? This will permanently remove the item and all associated claims from the database, and notify all claimers.'
-      );
-      
-      if (!confirmed) return;
+    setReunitedItemId(itemId);
+    setReunitedClaimId(claimId);
+    setShowReunitedDialog(true);
+  };
 
-      const success = await markItemAsReunited(itemId, claimId);
+  const handleConfirmReunited = async () => {
+    if (!reunitedItemId || !reunitedClaimId) return;
+
+    try {
+      const success = await markItemAsReunited(reunitedItemId, reunitedClaimId);
       
       if (success) {
         toast({
@@ -148,20 +193,23 @@ export const Dashboard: React.FC = () => {
         await fetchUserItems();
         await fetchUserClaims();
         await fetchClaimsForUserItems(userItems);
-      }  /* else {
+      } else {
         toast({
           title: 'Error',
           description: 'Failed to mark item as reunited. Please try again.',
           variant: 'destructive',
         });
-      } */
-      
+      }
     } catch (error) {
-      toast({
+      /*toast({
         title: 'Error',
         description: 'Failed to mark item as reunited. Please try again.',
         variant: 'destructive',
-      });
+      });*/
+    } finally {
+      setShowReunitedDialog(false);
+      setReunitedItemId(null);
+      setReunitedClaimId(null);
     }
   };
 
@@ -398,12 +446,22 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome back, {user?.user_metadata?.full_name || ''}! Manage your items
-          and claims here.
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back, {user?.user_metadata?.full_name || ''}! Manage your items
+            and claims here.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setShowSettings(true)}
+          className="flex-shrink-0"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -534,6 +592,35 @@ export const Dashboard: React.FC = () => {
           onClose={() => setEditingItem(null)}
         />
       )}
+
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
+
+      {/* Alert Dialog for Marking Item as Reunited */}
+      <AlertDialog open={showReunitedDialog} onOpenChange={setShowReunitedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark Item as Reunited</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark this item as reunited? This will permanently remove the item and all associated claims from the database, and notify all claimers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowReunitedDialog(false);
+              setReunitedItemId(null);
+              setReunitedClaimId(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmReunited}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

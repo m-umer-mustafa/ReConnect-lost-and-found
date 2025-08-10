@@ -10,6 +10,7 @@ import { useLostFound } from '@/context/LostFoundContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/context/AuthContext';
+import { validateItemName, validateDescription, validateDate } from '@/utils/validation';
 
 const CATEGORIES = [
   'Electronics',
@@ -32,6 +33,7 @@ export const ReportItem: React.FC = () => {
   
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -62,14 +64,50 @@ export const ReportItem: React.FC = () => {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    // Validate item name
+    const nameError = validateItemName(formData.title);
+    if (nameError) newErrors.title = nameError;
+
+    // Validate description
+    const descError = validateDescription(formData.description);
+    if (descError) newErrors.description = descError;
+
+    // Validate date
+    const dateError = validateDate(formData.dateLostFound, 'past');
+    if (dateError) newErrors.dateLostFound = dateError;
+
+    // Required fields
+    if (!formData.location.trim()) {
+      newErrors.location = 'Location is required';
+    }
+    if (!formData.category) {
+      newErrors.category = 'Category is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return toast({ title: 'Not signed in', variant: 'destructive' });
     
-    if (!formData.title.trim() || !formData.description.trim() || !formData.category || !formData.location.trim() || !formData.dateLostFound) {
+    if (!validateForm()) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields.",
+        description: "Please fix the errors in the form.",
         variant: "destructive",
       });
       return;
@@ -174,10 +212,14 @@ export const ReportItem: React.FC = () => {
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                onChange={(e) => handleChange('title', e.target.value)}
                 placeholder="e.g., iPhone 14 Pro, Blue Backpack, Wedding Ring"
+                className={errors.title ? 'border-destructive' : ''}
                 required
               />
+              {errors.title && (
+                <p className="text-sm text-destructive">{errors.title}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -185,21 +227,24 @@ export const ReportItem: React.FC = () => {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) => handleChange('description', e.target.value)}
                 placeholder="Provide a detailed description including color, size, brand, any unique features..."
-                className="min-h-[100px]"
+                className={`min-h-[100px] ${errors.description ? 'border-destructive' : ''}`}
                 required
               />
+              {errors.description && (
+                <p className="text-sm text-destructive">{errors.description}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="category">Category *</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                onValueChange={(value) => handleChange('category', value)}
                 required
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.category ? 'border-destructive' : ''}>
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -210,6 +255,9 @@ export const ReportItem: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.category && (
+                <p className="text-sm text-destructive">{errors.category}</p>
+              )}
             </div>
           </div>
 
@@ -225,10 +273,14 @@ export const ReportItem: React.FC = () => {
               <Input
                 id="location"
                 value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                onChange={(e) => handleChange('location', e.target.value)}
                 placeholder="e.g., Central Library, Main Street Coffee Shop, University Campus"
+                className={errors.location ? 'border-destructive' : ''}
                 required
               />
+              {errors.location && (
+                <p className="text-sm text-destructive">{errors.location}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -240,10 +292,14 @@ export const ReportItem: React.FC = () => {
                 id="date"
                 type="date"
                 value={formData.dateLostFound}
-                onChange={(e) => setFormData(prev => ({ ...prev, dateLostFound: e.target.value }))}
+                onChange={(e) => handleChange('dateLostFound', e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
+                className={errors.dateLostFound ? 'border-destructive' : ''}
                 required
               />
+              {errors.dateLostFound && (
+                <p className="text-sm text-destructive">{errors.dateLostFound}</p>
+              )}
             </div>
           </div>
 
