@@ -50,9 +50,12 @@ export const ClaimModal: React.FC<ClaimModalProps> = ({
         title: 'New claim on your item',
         body: `${user.user_metadata?.full_name || user.email} claimed “${item.title}”.`,
       });
+      
+      // Call the onSubmit callback and close modal
+      onSubmit(reason, uniqueIdentifiers);
+      onClose();
     } finally {
       setLoading(false);
-      window.location.reload();
     }
   };
 

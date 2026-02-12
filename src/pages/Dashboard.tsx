@@ -400,6 +400,7 @@ export const Dashboard: React.FC = () => {
                   <a
                     href={`mailto:${isIncoming ? claimerInfo?.email : item.userEmail}`}
                     className="underline text-primary hover:text-primary/80"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     {isIncoming ? claimerInfo?.email : item.userEmail}
                   </a>
