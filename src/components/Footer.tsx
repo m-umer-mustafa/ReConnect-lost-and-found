@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -20,12 +21,10 @@ export const Footer: React.FC = () => {
             <p>© {currentYear} ReConnect Lost & Found System. All rights reserved.</p>
           </div>
 
-          {/* Links 
+          {/* Links */}
           <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors">Terms</a>
-            <a href="#" className="hover:text-primary transition-colors">Support</a>
-          </div> */}
+            <Link to="/blog" className="hover:text-primary transition-colors">Blog</Link>
+          </div>
         </div>
       </div>
     </footer>

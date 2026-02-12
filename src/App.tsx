@@ -14,6 +14,7 @@ import { Home } from "@/pages/Home";
 import { Browse } from "@/pages/Browse";
 import { ReportItem } from "@/pages/ReportItem";
 import { Dashboard } from "@/pages/Dashboard";
+import { Blog } from "@/pages/Blog";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,11 @@ const App = () => (
                       <Dashboard />
                     </AppLayout>
                   </ProtectedRoute>
+                } />
+                <Route path="/blog" element={
+                    <AppLayout>
+                      <Blog />
+                    </AppLayout>
                 } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
