@@ -169,7 +169,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({ item, isOpen, onCl
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="neo-scrollbar w-[min(96vw,42rem)] max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold gradient-text">
             Edit Item

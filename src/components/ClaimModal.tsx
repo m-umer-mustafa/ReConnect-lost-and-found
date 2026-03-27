@@ -62,7 +62,7 @@ export const ClaimModal: React.FC<ClaimModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-background/80 backdrop-blur-sm animate-fade-in"
@@ -70,10 +70,10 @@ export const ClaimModal: React.FC<ClaimModalProps> = ({
         />
         {/* Modal */}
         <div className="relative w-full max-w-md glass-card animate-scale-in">
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">
+              <h2 className="text-lg font-semibold sm:text-xl">
                 {item.type === 'lost' ? 'Report Found Item' : 'Claim This Item'}
               </h2>
               <Button
@@ -87,7 +87,7 @@ export const ClaimModal: React.FC<ClaimModalProps> = ({
             </div>
 
             {/* Item Info */}
-            <div className="bg-accent/50 rounded-lg p-4 mb-6">
+            <div className="bg-accent/50 rounded-lg p-3 sm:p-4 mb-6">
               <h3 className="font-medium mb-2">{item.title}</h3>
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {item.description}

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 interface BlogPost {
@@ -272,27 +271,25 @@ export const Blog: React.FC = () => {
   const [selectedPost, setSelectedPost] = React.useState<BlogPost | null>(null);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 lg:py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
+    <div className="min-h-screen">
+      <div className="container mx-auto px-4 py-6 lg:py-12">
+        <section className="mx-auto mb-10 max-w-3xl text-center animate-fade-in">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-5xl dark:text-slate-100">
             ReConnect Blog
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Insights, stories, and tips about lost and found in the digital age
+          <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600 md:text-lg dark:text-slate-400">
+            Practical insights on recovery, trust, and safer lost-and-found communities.
           </p>
-        </div>
+        </section>
 
         {selectedPost ? (
-          /* Full Blog Post View */
-          <div className="max-w-4xl mx-auto">
+          <section className="mx-auto max-w-4xl animate-fade-in">
             <button
               onClick={() => setSelectedPost(null)}
-              className="flex items-center text-primary hover:underline mb-6 group"
+              className="mb-6 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
             >
               <svg
-                className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform"
+                className="h-4 w-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -307,83 +304,86 @@ export const Blog: React.FC = () => {
               Back to all posts
             </button>
 
-            <article className="bg-card rounded-lg border p-6 md:p-10">
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                <Badge variant="secondary">{selectedPost.category}</Badge>
-                <span className="text-sm text-muted-foreground">•</span>
-                <span className="text-sm text-muted-foreground">{selectedPost.date}</span>
+            <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft sm:p-6 md:p-10 dark:border-slate-800 dark:bg-slate-900">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <Badge className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  {selectedPost.category}
+                </Badge>
+                <span className="text-sm text-slate-400">•</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">{selectedPost.date}</span>
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">
+              <h1 className="mb-4 text-2xl font-semibold tracking-tight text-slate-900 md:text-4xl dark:text-slate-100">
                 {selectedPost.title}
               </h1>
 
-              <div className="flex items-center gap-2 mb-8 text-sm text-muted-foreground">
-                <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">R</span>
+              <div className="mb-8 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-primary/10 dark:border-slate-700 dark:bg-primary/20">
+                  <span className="text-xs font-semibold text-primary">R</span>
                 </div>
                 <span>By {selectedPost.author}</span>
               </div>
 
-              <div className="prose prose-slate dark:prose-invert max-w-none">
+              <div className="max-w-none">
                 {selectedPost.content.split('\n\n').map((paragraph, index) => {
-                  // Check if paragraph is a heading (starts with **)
                   if (paragraph.startsWith('**') && paragraph.endsWith('**')) {
                     return (
-                      <h2 key={index} className="text-2xl font-bold mt-8 mb-4">
+                      <h2 key={index} className="mb-4 mt-8 text-xl font-semibold text-slate-900 md:text-2xl dark:text-slate-100">
                         {paragraph.slice(2, -2)}
                       </h2>
                     );
                   }
-                  // Check if paragraph is a subheading (starts with *)
+
                   if (paragraph.startsWith('*') && paragraph.endsWith('*') && !paragraph.includes('**')) {
                     return (
-                      <h3 key={index} className="text-xl font-semibold mt-6 mb-3">
+                      <h3 key={index} className="mb-3 mt-6 text-lg font-semibold text-slate-900 md:text-xl dark:text-slate-100">
                         {paragraph.slice(1, -1)}
                       </h3>
                     );
                   }
+
                   return (
-                    <p key={index} className="mb-4 text-base leading-relaxed">
+                    <p key={index} className="mb-4 text-base leading-relaxed text-slate-700 dark:text-slate-300">
                       {paragraph}
                     </p>
                   );
                 })}
               </div>
             </article>
-          </div>
+          </section>
         ) : (
-          /* Blog Post Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 animate-fade-in">
             {blogPosts.map((post) => (
-              <Card
+              <article
                 key={post.id}
-                className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col"
+                className="neo-interactive flex cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-card transition-shadow hover:shadow-soft dark:border-slate-800 dark:bg-slate-900"
                 onClick={() => setSelectedPost(post)}
               >
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="secondary">{post.category}</Badge>
-                    <span className="text-sm text-muted-foreground">{post.date}</span>
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <Badge className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                      {post.category}
+                    </Badge>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{post.date}</span>
                   </div>
-                  <CardTitle className="text-xl leading-tight hover:text-primary transition-colors">
+                  <h2 className="text-xl leading-tight font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                     {post.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col justify-between">
-                  <CardDescription className="text-sm line-clamp-3 mb-4">
+                  </h2>
+                </div>
+                <div className="mt-4 flex flex-1 flex-col justify-between">
+                  <p className="mb-4 line-clamp-3 text-sm text-slate-600 dark:text-slate-400">
                     {post.excerpt}
-                  </CardDescription>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className="w-6 h-6 rounded-full bg-gradient-primary flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">R</span>
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 bg-primary/10 dark:border-slate-700 dark:bg-primary/20">
+                      <span className="text-xs font-semibold text-primary">R</span>
                     </div>
                     <span>{post.author}</span>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </article>
             ))}
-          </div>
+          </section>
         )}
       </div>
     </div>

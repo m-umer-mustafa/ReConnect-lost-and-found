@@ -110,17 +110,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       <div 
         className="absolute inset-0 bg-background/80 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
       
-      <div className="relative w-full max-w-lg glass-card animate-scale-in max-h-[90vh] overflow-y-auto rounded-xl">
-        <div className="p-6">
+      <div className="neo-scrollbar relative w-full max-w-lg glass-card animate-scale-in max-h-[90vh] overflow-y-auto rounded-xl">
+        <div className="p-4 sm:p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Account Settings</h2>
+            <h2 className="text-lg font-semibold sm:text-xl">Account Settings</h2>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5" />
             </Button>

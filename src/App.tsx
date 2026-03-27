@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { LostFoundProvider } from "@/context/LostFoundContext";
@@ -19,15 +19,20 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="min-h-screen flex flex-col">
-    <Header />
-    <main className="flex-1">
-      {children}
-    </main>
-    <Footer />
-  </div>
-);
+const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  const isReportRoute = location.pathname === "/report";
+
+  return (
+    <div className="graph-paper-bg min-h-screen flex flex-col">
+      <Header />
+      <main className={`flex-1 ${isReportRoute ? "" : "py-3 md:py-6"}`}>
+        {children}
+      </main>
+      <Footer />
+    </div>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -41,11 +46,9 @@ const App = () => (
               <Routes>
                 {  <Route path="/auth" element={<Auth />} /> /**/ }
                 <Route path="/" element={
-                  <ProtectedRoute>
                     <AppLayout>
                       <Home />
                     </AppLayout>
-                  </ProtectedRoute>
                 } />
                 <Route path="/browse" element={
                     <AppLayout>

@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { ItemCard } from '@/components/ItemCard';
 import { ClaimModal } from '@/components/ClaimModal';
+import { AuthRequiredDialog } from '@/components/AuthRequiredDialog';
 import type { FilterOptions, LostFoundItem } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
@@ -64,6 +65,7 @@ export const Browse: React.FC = () => {
 
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<LostFoundItem | null>(null);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
 
   /* ---------- load items ---------- */
   useEffect(() => {
@@ -118,6 +120,10 @@ export const Browse: React.FC = () => {
   );
 
   const handleClaim = (item: LostFoundItem) => {
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
     setSelectedItem(item);
     setShowClaimModal(true);
     fetchItems();
@@ -176,20 +182,35 @@ export const Browse: React.FC = () => {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8">
+      <AuthRequiredDialog 
+        isOpen={showAuthDialog} 
+        onClose={() => setShowAuthDialog(false)}
+        action="claim an item"
+      />
+      <ClaimModal
+        isOpen={showClaimModal}
+        item={selectedItem!}
+        onClose={() => {
+          setShowClaimModal(false);
+          setSelectedItem(null);
+        }}
+        onSubmit={handleClaimSubmit}
+      />
+      <div className="container mx-auto px-4 py-6 md:py-12">
+        <div className="neo-page-shell">
         {/* header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Browse Items</h1>
-          <p className="text-muted-foreground">
+        <div className="mb-7 md:mb-9">
+          <h1 className="mb-2 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl dark:text-slate-100">Browse Items</h1>
+          <p className="text-slate-600 dark:text-slate-400">
             Search through {items.length} reported items
           </p>
         </div>
 
         {/* filters */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col gap-4">
+        <div className="neo-panel mb-7 space-y-4 p-4 md:mb-8 md:space-y-5 md:p-6">
+          <div className="flex flex-col gap-5">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
               <Input
                 placeholder="Search items, descriptions, categories..."
                 value={filters.search}
@@ -200,9 +221,9 @@ export const Browse: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Date From
                 </label>
                 <Input
@@ -214,11 +235,13 @@ export const Browse: React.FC = () => {
                       dateFrom: e.target.value,
                     }))
                   }
+                  className="text-slate-700 dark:text-slate-200"
+                  
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Category
                 </label>
                 <Select
@@ -245,7 +268,7 @@ export const Browse: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">Status</label>
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
                 <Select
                   value={filters.status || 'all'}
                   onValueChange={(v) =>
@@ -271,7 +294,7 @@ export const Browse: React.FC = () => {
                   <Button
                     variant="outline"
                     onClick={clearFilters}
-                    className="w-full"
+                    className="w-full lg:h-11"
                   >
                     <X className="mr-2 h-4 w-4" /> Clear
                   </Button>
@@ -283,7 +306,7 @@ export const Browse: React.FC = () => {
 
         {/* results */}
         <div className="mb-6">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             Showing {filteredItems.length} of {items.length} items
             {hasActiveFilters && ' (filtered)'}
           </p>
@@ -306,30 +329,23 @@ export const Browse: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <Search className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No items found</h3>
-            <p className="text-muted-foreground">
+          <div className="neo-panel py-12 text-center">
+            <Search className="mx-auto mb-4 h-8 w-8 text-slate-400" />
+            <h3 className="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">No items found</h3>
+            <p className="text-slate-600 dark:text-slate-400">
               {hasActiveFilters
                 ? 'Try adjusting your filters'
                 : 'No items have been reported yet'}
             </p>
             {hasActiveFilters && (
-              <Button variant="outline" onClick={clearFilters}>
+              <Button variant="outline" className="mt-4" onClick={clearFilters}>
                 Clear Filters
               </Button>
             )}
           </div>
         )}
+        </div>
       </div>
-
-      {/* Claim Modal (portal-friendly) */}
-      <ClaimModal
-        isOpen={showClaimModal}
-        onClose={() => setShowClaimModal(false)}
-        onSubmit={handleClaimSubmit}
-        item={selectedItem}
-      />
     </>
   );
 };

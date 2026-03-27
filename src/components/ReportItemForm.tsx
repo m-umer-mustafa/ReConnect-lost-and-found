@@ -111,7 +111,7 @@ export const ReportItemForm: React.FC<ReportItemFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Item Title */}
       <div className="space-y-2">
-        <Label htmlFor="title">Item Name*</Label>
+        <Label htmlFor="title" className="text-slate-700 dark:text-slate-300">Item Name*</Label>
         <Input
           id="title"
           value={formData.title}
@@ -133,13 +133,13 @@ export const ReportItemForm: React.FC<ReportItemFormProps> = ({
 
       {/* Description */}
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description" className="text-slate-700 dark:text-slate-300">Description</Label>
         <Textarea
           id="description"
           value={formData.description}
           onChange={(e) => handleChange('description', e.target.value)}
           placeholder="Provide more details about the item..."
-          className={`min-h-[100px] ${errors.description ? 'border-destructive' : ''}`}
+          className={`min-h-[110px] rounded-lg border border-input bg-slate-100/50 text-slate-900 placeholder:text-slate-500 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-slate-800/50 dark:text-slate-100 dark:placeholder:text-slate-400 ${errors.description ? 'border-destructive' : ''}`}
           maxLength={1000}
         />
         <div className="flex justify-between text-sm">
@@ -154,7 +154,7 @@ export const ReportItemForm: React.FC<ReportItemFormProps> = ({
 
       {/* Category */}
       <div className="space-y-2">
-        <Label htmlFor="category">Category</Label>
+        <Label htmlFor="category" className="text-slate-700 dark:text-slate-300">Category</Label>
         <Input
           id="category"
           value={formData.category}
@@ -165,7 +165,7 @@ export const ReportItemForm: React.FC<ReportItemFormProps> = ({
 
       {/* Location */}
       <div className="space-y-2">
-        <Label htmlFor="location">Location*</Label>
+        <Label htmlFor="location" className="text-slate-700 dark:text-slate-300">Location*</Label>
         <Input
           id="location"
           value={formData.location}
@@ -187,7 +187,7 @@ export const ReportItemForm: React.FC<ReportItemFormProps> = ({
 
       {/* Date */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium">
+        <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
           Date {type === 'lost' ? 'Lost' : 'Found'} *
         </Label>
         <Popover>
@@ -223,7 +223,7 @@ export const ReportItemForm: React.FC<ReportItemFormProps> = ({
 
       {/* Contact Email */}
       <div className="space-y-2">
-        <Label htmlFor="contactEmail">Contact Email</Label>
+        <Label htmlFor="contactEmail" className="text-slate-700 dark:text-slate-300">Contact Email</Label>
         <Input
           id="contactEmail"
           type="email"
@@ -235,7 +235,7 @@ export const ReportItemForm: React.FC<ReportItemFormProps> = ({
 
       {/* Contact Phone */}
       <div className="space-y-2">
-        <Label htmlFor="contactPhone">Contact Phone</Label>
+        <Label htmlFor="contactPhone" className="text-slate-700 dark:text-slate-300">Contact Phone</Label>
         <Input
           id="contactPhone"
           type="tel"
@@ -245,7 +245,7 @@ export const ReportItemForm: React.FC<ReportItemFormProps> = ({
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" variant="default" className="w-full" disabled={loading}>
         {loading ? (
           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         ) : (

@@ -2,207 +2,328 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Lost & Found System Design System - Soft, Soothing Palette */
-
 @layer base {
   :root {
-    /* Light theme - Slightly darker and more contrast */
-    --background: 220 15% 92%; /* ↓ from 97% */
-    --foreground: 220 15% 20%; /* ↓ from 15% */
+    color-scheme: light;
 
-    --card: 220 15% 96%;       /* ↓ from 99% */
-    --card-foreground: 220 15% 20%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
 
-    --popover: 220 15% 96%;
-    --popover-foreground: 220 15% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
 
-    --primary: 175 70% 48%;    /* ↓ from 55% */
-    --primary-foreground: 220 15% 97%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    --secondary: 175 30% 82%;  /* ↓ from 90% */
-    --secondary-foreground: 220 15% 25%;
+    --primary: 217 91% 52%;
+    --primary-foreground: 210 40% 98%;
 
-    --muted: 175 15% 85%;      /* ↓ from 92% */
-    --muted-foreground: 220 15% 40%; /* ↓ from 45% */
+    --secondary: 215 33% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --accent: 175 50% 78%;     /* ↓ from 85% */
-    --accent-foreground: 220 15% 25%;
+    --muted: 214 32% 95%;
+    --muted-foreground: 215 16% 46%;
 
-    --destructive: 0 70% 55%;  /* ↓ from 60% */
-    --destructive-foreground: 220 15% 97%;
+    --accent: 214 32% 95%;
+    --accent-foreground: 222 47% 11%;
 
-    --border: 175 20% 80%;     /* ↓ from 88% */
-    --input: 175 20% 80%;
-    --ring: 175 70% 48%;       /* ↓ to match primary */
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 210 40% 98%;
 
-    --success: 140 70% 48%;    /* ↓ from 55% */
-    --success-foreground: 220 15% 97%;
+    --border: 214 32% 89%;
+    --input: 214 32% 89%;
+    --ring: 217 91% 52%;
 
-    --warning: 35 85% 52%;     /* ↓ from 60% */
-    --warning-foreground: 220 15% 97%;
+    --success: 152 55% 42%;
+    --success-foreground: 210 40% 98%;
 
-    --radius: 0.75rem;
+    --warning: 38 92% 52%;
+    --warning-foreground: 24 10% 10%;
 
-    /* Gradients - adjusted to match darker shades */
-    --gradient-primary: linear-gradient(135deg, hsl(175 70% 48%), hsl(175 60% 58%));
-    --gradient-hero: linear-gradient(135deg, hsl(175 50% 78%), hsl(175 30% 82%));
-    --gradient-card: linear-gradient(145deg, hsl(220 15% 96%), hsl(175 15% 90%));
+    --lost: 354 72% 63%;
+    --lost-foreground: 210 40% 98%;
 
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --found: 152 55% 42%;
+    --found-foreground: 210 40% 98%;
 
-    /* Shadows */
-    --shadow-soft: 0 4px 20px hsl(175 50% 78% / 0.3);
-    --shadow-hover: 0 8px 30px hsl(175 50% 78% / 0.4);
-    --shadow-card: 0 2px 15px hsl(175 30% 82% / 0.2);
+    --pending: 38 92% 52%;
+    --pending-foreground: 24 10% 10%;
+
+    --radius: 0.875rem;
+
+    --shadow-soft: 0 8px 24px rgb(15 23 42 / 0.08);
+    --shadow-hover: 0 12px 32px rgb(15 23 42 / 0.11);
+    --shadow-card: 0 2px 8px rgb(15 23 42 / 0.06);
+
+    --scroll-track: #e2e8f0;
+    --scroll-thumb: #94a3b8;
+    --scroll-thumb-hover: #64748b;
+    --scroll-border: #f8fafc;
   }
 
   .dark {
-    /* Dark theme - Deep navy with teal accents */
-    --background: 220 25% 8%;
-    --foreground: 175 30% 85%;
+    color-scheme: dark;
 
-    --card: 220 20% 12%;
-    --card-foreground: 175 30% 85%;
+    --background: 222 47% 6%;
+    --foreground: 210 40% 96%;
 
-    --popover: 220 20% 12%;
-    --popover-foreground: 175 30% 85%;
+    --card: 222 36% 11%;
+    --card-foreground: 210 40% 96%;
 
-    --primary: 175 70% 55%;
-    --primary-foreground: 220 25% 8%;
+    --popover: 222 36% 11%;
+    --popover-foreground: 210 40% 96%;
 
-    --secondary: 220 15% 18%;
-    --secondary-foreground: 175 30% 85%;
+    --primary: 213 76% 62%;
+    --primary-foreground: 222 47% 9%;
 
-    --muted: 220 15% 18%;
-    --muted-foreground: 175 15% 60%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
 
-    --accent: 220 15% 20%;
-    --accent-foreground: 175 30% 85%;
+    --muted: 217 25% 19%;
+    --muted-foreground: 215 20% 68%;
 
-    --destructive: 0 70% 60%;
-    --destructive-foreground: 175 30% 85%;
+    --accent: 217 25% 19%;
+    --accent-foreground: 210 40% 96%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 20%;
-    --ring: 175 70% 55%;
-    --radius-lg: 16px;
+    --destructive: 0 62% 54%;
+    --destructive-foreground: 210 40% 96%;
 
-    --success: 140 70% 55%;
-    --success-foreground: 220 25% 8%;
+    --border: 217 19% 24%;
+    --input: 217 19% 24%;
+    --ring: 213 76% 62%;
 
-    --warning: 35 85% 60%;
-    --warning-foreground: 220 25% 8%;
+    --success: 152 44% 47%;
+    --success-foreground: 210 40% 96%;
 
-    /* Dark theme gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(175 70% 55%), hsl(175 60% 45%));
-    --gradient-hero: linear-gradient(135deg, hsl(220 20% 12%), hsl(220 15% 18%));
-    --gradient-card: linear-gradient(145deg, hsl(220 20% 12%), hsl(220 15% 15%));
+    --warning: 41 84% 56%;
+    --warning-foreground: 222 47% 9%;
 
-    /* Dark theme shadows */
-    --shadow-soft: 0 4px 20px hsl(220 25% 5% / 0.4);
-    --shadow-hover: 0 8px 30px hsl(220 25% 5% / 0.5);
-    --shadow-card: 0 2px 15px hsl(220 25% 5% / 0.3);
+    --lost: 354 62% 66%;
+    --lost-foreground: 210 40% 96%;
+
+    --found: 152 44% 47%;
+    --found-foreground: 210 40% 96%;
+
+    --pending: 41 84% 56%;
+    --pending-foreground: 222 47% 9%;
+
+    --shadow-soft: 0 0 0 rgb(0 0 0 / 0);
+    --shadow-hover: 0 0 0 rgb(0 0 0 / 0);
+    --shadow-card: 0 0 0 rgb(0 0 0 / 0);
+
+    --scroll-track: #0f172a;
+    --scroll-thumb: #334155;
+    --scroll-thumb-hover: #475569;
+    --scroll-border: #1e293b;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground transition-colors duration-300;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 
   html {
     scroll-behavior: smooth;
   }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Space Grotesk", "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+  }
+
+  body::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  body::-webkit-scrollbar-track {
+    background: var(--scroll-track);
+  }
+
+  body::-webkit-scrollbar-thumb {
+    background: var(--scroll-thumb);
+    border: 2px solid var(--scroll-border);
+    border-radius: 9999px;
+  }
+
+  body::-webkit-scrollbar-thumb:hover {
+    background: var(--scroll-thumb-hover);
+  }
 }
 
 @layer components {
-  /* Water Drop Animation */
-  .water-drop {
-    @apply relative overflow-hidden transition-all duration-300;
+  .graph-paper-bg {
+    --grid-size: 30px;
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        rgb(15 23 42 / 0.04) 0 1px,
+        transparent 1px var(--grid-size)
+      ),
+      repeating-linear-gradient(
+        0deg,
+        rgb(15 23 42 / 0.04) 0 1px,
+        transparent 1px var(--grid-size)
+      );
+    background-size: auto;
+    background-position: 0 0;
   }
 
-  .water-drop::before {
-    content: '';
-    @apply absolute inset-0 bg-primary/20 rounded-full scale-0 transition-transform duration-500;
-    transform-origin: center;
+  .dot-paper-bg {
+    background-image: radial-gradient(circle, rgb(15 23 42 / 0.08) 1px, transparent 1px);
+    background-size: 18px 18px;
+    background-position: 0 0;
   }
 
-  .water-drop:hover::before {
-    @apply scale-110;
+  .dark .graph-paper-bg {
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        rgb(148 163 184 / 0.055) 0 1px,
+        transparent 1px var(--grid-size)
+      ),
+      repeating-linear-gradient(
+        0deg,
+        rgb(148 163 184 / 0.055) 0 1px,
+        transparent 1px var(--grid-size)
+      );
+    background-size: auto;
   }
 
-  .water-drop:active::before {
-    @apply scale-95;
+  .dark .dot-paper-bg {
+    background-image: radial-gradient(circle, rgb(148 163 184 / 0.1) 1px, transparent 1px);
   }
 
-  /* Sliding Animation */
-  .slide-enter {
-    @apply transform translate-x-full;
+  .neo-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) var(--scroll-track);
   }
 
-  .slide-enter-active {
-    @apply transform translate-x-0 transition-transform duration-500 ease-out;
+  .neo-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
   }
 
-  .slide-exit {
-    @apply transform translate-x-0;
+  .neo-scrollbar::-webkit-scrollbar-track {
+    background: var(--scroll-track);
+    border-radius: 9999px;
   }
 
-  .slide-exit-active {
-    @apply transform -translate-x-full transition-transform duration-500 ease-in;
+  .neo-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--scroll-thumb);
+    border: 2px solid var(--scroll-border);
+    border-radius: 9999px;
   }
 
-  /* Glassmorphism Card */
-  .glass-card {
-    @apply backdrop-blur-sm bg-card/80 border border-border/50 rounded-xl;
-    box-shadow: var(--shadow-card);
+  .neo-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--scroll-thumb-hover);
   }
 
-  /* Gradient Text */
+  .neo-page-shell {
+    @apply rounded-2xl border border-slate-300 bg-white/95 p-4 shadow-soft backdrop-blur-sm dark:bg-slate-900/95 dark:border-slate-700;
+  }
+
+  .neo-panel,
+  .glass-card,
+  .neo-notification-panel {
+    @apply rounded-2xl border border-slate-300 bg-white shadow-card dark:bg-slate-900 dark:border-slate-700;
+  }
+
+  .dark .neo-page-shell,
+  .dark .neo-panel,
+  .dark .glass-card,
+  .dark .neo-notification-panel {
+    box-shadow: inset 0 0 0 1px rgb(148 163 184 / 0.08);
+  }
+
+  .neo-interactive {
+    @apply transition-transform duration-200 ease-out hover:scale-[1.01];
+  }
+
   .gradient-text {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    @apply text-slate-900 dark:text-slate-100;
   }
 
-  /* Floating Animation */
-  .float {
-    animation: float 3s ease-in-out infinite;
+  .float,
+  .pulse-glow,
+  .water-drop,
+  .slide-enter,
+  .slide-enter-active,
+  .slide-exit,
+  .slide-exit-active {
+    animation: none;
+    transform: none;
   }
 
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-  }
-
-  /* Pulse Glow */
-  .pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite alternate;
-  }
-
-  @keyframes pulse-glow {
-    from {
-      box-shadow: 0 0 5px hsl(var(--primary) / 0.5);
-    }
-    to {
-      box-shadow: 0 0 20px hsl(var(--primary) / 0.8), 0 0 30px hsl(var(--primary) / 0.4);
-    }
-  }
-
-  /* Theme Switch Animation */
   .theme-switch {
-    transition: transform 0.3s ease;
+    transition: transform 0.2s ease;
   }
 
   .theme-switch.rotating {
     transform: rotate(180deg);
+  }
+
+  .report-mood-bg-lost,
+  .report-mood-bg-found {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .report-mood-bg-lost::before,
+  .report-mood-bg-found::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-size: 180% 180%;
+    animation: report-mood-drift 24s ease-in-out infinite;
+  }
+
+  .report-mood-bg-lost::before {
+    background-image:
+      radial-gradient(circle at 4% 8%, rgb(251 113 133 / 0.06), transparent 36%),
+      radial-gradient(circle at 96% 92%, rgb(248 113 113 / 0.05), transparent 38%);
+  }
+
+  .report-mood-bg-found::before {
+    background-image:
+      radial-gradient(circle at 4% 8%, rgb(52 211 153 / 0.06), transparent 36%),
+      radial-gradient(circle at 96% 92%, rgb(34 197 94 / 0.05), transparent 38%);
+  }
+
+  .report-mood-bg-lost::before,
+  .report-mood-bg-found::before {
+    z-index: -1;
+  }
+
+  @keyframes report-mood-drift {
+    0% {
+      background-position: 0% 0%, 100% 100%;
+    }
+    50% {
+      background-position: 6% 4%, 94% 96%;
+    }
+    100% {
+      background-position: 0% 0%, 100% 100%;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .graph-paper-bg {
+    --grid-size: 26px;
+  }
+
+  .neo-page-shell {
+    padding: 0.875rem;
   }
 }

@@ -8,10 +8,10 @@ export const ThemeToggle: React.FC = () => {
 
   return (
     <Button
-      variant="ghost"
+      variant="outline"
       size="icon"
       onClick={toggleTheme}
-      className={`theme-switch ${isAnimating ? 'rotating' : ''}`}
+      className={`theme-switch h-11 w-11 ${isAnimating ? 'rotating' : ''}`}
       aria-label="Toggle theme"
     >
       {theme === 'light' ? (

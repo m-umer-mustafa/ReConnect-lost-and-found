@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCircle2 } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
@@ -86,12 +86,12 @@ export const BellNotifications: React.FC = () => {
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
-          className="relative overflow-visible"  // <-- add this
+          className="relative h-11 w-11 overflow-visible"
         >
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-background shadow-lg">
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white ring-2 ring-background dark:ring-slate-900">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -102,10 +102,10 @@ export const BellNotifications: React.FC = () => {
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-80 max-h-[70vh] overflow-y-auto p-0"
+        className="w-[min(92vw,20rem)] rounded-xl border border-slate-200 bg-white p-0 shadow-soft dark:border-slate-800 dark:bg-slate-900"
       >
-        <div className="flex items-center justify-between p-4 border-b">
-          <span className="font-semibold">Notifications</span>
+        <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-800">
+          <span className="font-semibold tracking-tight text-slate-900 dark:text-slate-100">Notifications</span>
           {unreadCount > 0 && (
             <Button variant="ghost" size="sm" className="text-xs" onClick={markAllRead}>
               Mark all read
@@ -114,17 +114,17 @@ export const BellNotifications: React.FC = () => {
         </div>
 
         {notifications.length === 0 ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">No notifications</div>
+          <div className="p-4 text-center text-sm text-slate-600 dark:text-slate-400">No notifications</div>
         ) : (
-          <div className="divide-y">
+          <div className="neo-scrollbar max-h-[62vh] overflow-y-auto divide-y">
             {notifications.map(n => (
               <div
                 key={n.id}
-                className={`p-3 text-sm ${!n.read ? 'bg-primary/5' : 'opacity-70'}`}
+                className={`p-3 text-sm transition-colors ${!n.read ? 'bg-slate-100/70 dark:bg-slate-800/70' : 'bg-white dark:bg-slate-900'}`}
               >
-                <p className="font-medium">{n.title}</p>
-                <p className="text-muted-foreground">{n.body}</p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="font-medium text-slate-900 dark:text-slate-100">{n.title}</p>
+                <p className="text-slate-600 dark:text-slate-300">{n.body}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                 </p>
               </div>

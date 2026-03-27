@@ -1,11 +1,16 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Plus, Users, CheckCircle, Clock, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, Plus, CheckCircle, Clock, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLostFound } from '@/context/LostFoundContext';
+import { useAuth } from '@/context/AuthContext';
+import { AuthRequiredDialog } from '@/components/AuthRequiredDialog';
 
 export const Home: React.FC = () => {
   const { items } = useLostFound();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
 
   const stats = {
     totalItems: items.length,
@@ -14,20 +19,33 @@ export const Home: React.FC = () => {
     claimedItems: items.filter(item => item.status === 'claimed').length,
   };
 
+  const handleReportClick = () => {
+    if (isAuthenticated) {
+      navigate('/report');
+    } else {
+      setShowAuthDialog(true);
+    }
+  };
+
   return (
     <div className="min-h-screen">
+      <AuthRequiredDialog 
+        isOpen={showAuthDialog} 
+        onClose={() => setShowAuthDialog(false)}
+        action="report an item"
+      />
       {/* Hero Section */}
-      <section className="relative py-20 bg-gradient-hero overflow-hidden">
+      <section className="relative overflow-hidden py-10 md:py-20">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
+          <div className="neo-page-shell dark:shadow-none relative mx-auto max-w-5xl space-y-6 md:space-y-8 text-center">
             <div className="space-y-4 animate-fade-in">
-              <h1 className="text-5xl md:text-6xl font-bold gradient-text">
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl md:text-6xl dark:text-slate-100">
                 Lost Something?
               </h1>
-              <h2 className="text-4xl md:text-5xl font-bold text-foreground">
+              <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl md:text-5xl dark:text-slate-100">
                 We'll Help You Find It
               </h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              <p className="mx-auto max-w-2xl text-base text-slate-600 sm:text-lg md:text-xl dark:text-slate-400">
                 ReConnect is a community-driven platform that helps reunite people with their lost belongings.
                 Report, search, and recover items with ease.
               </p>
@@ -41,99 +59,92 @@ export const Home: React.FC = () => {
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="xl" className="group">
-                <Link to="/report">
-                  <Plus className="mr-2 h-5 w-5 group-hover:rotate-90 transition-transform" />
-                  Report an Item
-                </Link>
+              <Button variant="outline" size="xl" className="group" onClick={handleReportClick}>
+                <Plus className="mr-2 h-5 w-5 group-hover:rotate-90 transition-transform" />
+                Report an Item
               </Button>
             </div>
           </div>
         </div>
-
-        {/* Floating Elements */}
-        <div className="absolute top-20 left-10 w-20 h-20 bg-primary/10 rounded-full float animation-delay-1000" />
-        <div className="absolute top-40 right-16 w-12 h-12 bg-primary/15 rounded-full float animation-delay-2000" />
-        <div className="absolute bottom-20 left-1/4 w-16 h-16 bg-primary/20 rounded-full float animation-delay-500" />
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-background">
+      <section className="py-10 md:py-16">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="glass-card p-6 text-center group hover:shadow-hover transition-all duration-300">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 md:gap-6">
+            <div className="glass-card dark:shadow-none neo-interactive p-6 text-center group">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-300 bg-primary/10 dark:border-slate-700 dark:bg-primary/20">
                 <Search className="h-6 w-6 text-primary" />
               </div>
-              <div className="text-2xl font-bold text-foreground">{stats.totalItems}</div>
-              <div className="text-sm text-muted-foreground">Total Items</div>
+              <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{stats.totalItems}</div>
+              <div className="text-sm text-slate-600 dark:text-slate-400">Total Items</div>
             </div>
 
-            <div className="glass-card p-6 text-center group hover:shadow-hover transition-all duration-300">
-              <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <Clock className="h-6 w-6 text-destructive" />
+            <div className="glass-card dark:shadow-none neo-interactive p-6 text-center group">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-lost/40 bg-lost/20">
+                <Clock className="h-6 w-6 text-lost" />
               </div>
-              <div className="text-2xl font-bold text-foreground">{stats.lostItems}</div>
-              <div className="text-sm text-muted-foreground">Lost Items</div>
+              <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{stats.lostItems}</div>
+              <div className="text-sm text-slate-600 dark:text-slate-400">Lost Items</div>
             </div>
 
-            <div className="glass-card p-6 text-center group hover:shadow-hover transition-all duration-300">
-              <div className="w-12 h-12 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <Plus className="h-6 w-6 text-warning" />
+            <div className="glass-card dark:shadow-none neo-interactive p-6 text-center group">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-found/40 bg-found/20">
+                <Plus className="h-6 w-6 text-found" />
               </div>
-              <div className="text-2xl font-bold text-foreground">{stats.foundItems}</div>
-              <div className="text-sm text-muted-foreground">Found Items</div>
+              <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{stats.foundItems}</div>
+              <div className="text-sm text-slate-600 dark:text-slate-400">Found Items</div>
             </div>
 
-            <div className="glass-card p-6 text-center group hover:shadow-hover transition-all duration-300">
-              <div className="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <CheckCircle className="h-6 w-6 text-success" />
+            <div className="glass-card dark:shadow-none neo-interactive p-6 text-center group">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-pending/40 bg-pending/20">
+                <CheckCircle className="h-6 w-6 text-pending" />
               </div>
-              <div className="text-2xl font-bold text-foreground">{stats.claimedItems}</div>
-              <div className="text-sm text-muted-foreground">Reunited</div>
+              <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{stats.claimedItems}</div>
+              <div className="text-sm text-slate-600 dark:text-slate-400">Reunited</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 bg-accent/20">
+      <section className="py-12 md:py-20">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
-              <p className="text-xl text-muted-foreground">
+          <div className="neo-page-shell dark:shadow-none mx-auto max-w-5xl">
+            <div className="mb-10 text-center md:mb-12">
+              <h2 className="mb-4 text-2xl font-semibold tracking-tight text-slate-900 md:text-4xl dark:text-slate-100">How It Works</h2>
+              <p className="text-base text-slate-600 md:text-xl dark:text-slate-400">
                 Simple steps to reunite with your belongings
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center space-y-4 group">
-                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-2xl font-bold text-white">1</span>
+            <div className="grid gap-5 md:grid-cols-3 md:gap-8">
+              <div className="glass-card dark:shadow-none neo-interactive p-5 text-center space-y-4">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                  <span className="text-2xl font-semibold text-primary">1</span>
                 </div>
-                <h3 className="text-xl font-semibold">Report Your Item</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Report Your Item</h3>
+                <p className="text-slate-600 dark:text-slate-400">
                   Create a detailed report with photos, description, and location where you lost or found the item.
                 </p>
               </div>
 
-              <div className="text-center space-y-4 group">
-                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-2xl font-bold text-white">2</span>
+              <div className="glass-card dark:shadow-none neo-interactive p-5 text-center space-y-4">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                  <span className="text-2xl font-semibold text-primary">2</span>
                 </div>
-                <h3 className="text-xl font-semibold">Browse & Match</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Browse & Match</h3>
+                <p className="text-slate-600 dark:text-slate-400">
                   Search through reported items and use our filters to find potential matches for your lost belongings.
                 </p>
               </div>
 
-              <div className="text-center space-y-4 group">
-                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-2xl font-bold text-white">3</span>
+              <div className="glass-card dark:shadow-none neo-interactive p-5 text-center space-y-4">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                  <span className="text-2xl font-semibold text-primary">3</span>
                 </div>
-                <h3 className="text-xl font-semibold">Get Connected</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Get Connected</h3>
+                <p className="text-slate-600 dark:text-slate-400">
                   Submit a claim with proof of ownership and connect directly with the person who found your item.
                 </p>
               </div>
@@ -143,13 +154,13 @@ export const Home: React.FC = () => {
       </section>
 
       {/* Call to Action */}
-      <section className="py-16 bg-gradient-primary">
+      <section className="py-10 md:py-16">
         <div className="container mx-auto px-4 text-center">
-          <div className="max-w-2xl mx-auto space-y-6">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">
+          <div className="neo-panel dark:shadow-none neo-interactive mx-auto max-w-2xl space-y-5 p-6 md:space-y-6 md:p-10">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-4xl dark:text-slate-100">
               Ready to Get Started?
             </h2>
-            <p className="text-xl text-white/90">
+            <p className="text-base text-slate-600 md:text-xl dark:text-slate-400">
               Join our community and help make losing something a thing of the past.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -159,7 +170,7 @@ export const Home: React.FC = () => {
                   Report an Item
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="xl" className="group bg-white/10 border-white/20 text-white hover:bg-white/20">
+              <Button asChild variant="outline" size="xl" className="group">
                 <Link to="/browse">
                   <Search className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
                   Browse Items

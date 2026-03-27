@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Calendar, User, Eye, X } from 'lucide-react';
+import { MapPin, Calendar, User, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ClaimModal } from '@/components/ClaimModal';
 import { LostFoundItem } from '@/lib/types';
-import { useLostFound } from '@/context/LostFoundContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -18,30 +16,25 @@ interface ItemCardProps {
 export const ItemCard: React.FC<ItemCardProps> = ({ item, onClaim }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [items, setItems] = useState([]);
-  const fetchItems = async () => {
-    const { data } = await supabase.from("items").select("*");
-    setItems(data);
-  };
 
   if (!item) return null;
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'claimed':
-        return 'bg-success text-success-foreground';
+        return 'bg-pending/20 text-pending-foreground border-pending/40';
       case 'found':
-        return 'bg-warning text-warning-foreground';
+        return 'bg-found/20 text-found-foreground border-found/40';
       case 'lost':
-        return 'bg-destructive text-destructive-foreground';
+        return 'bg-lost/20 text-lost-foreground border-lost/40';
       case 'approved':
-        return 'bg-success text-success-foreground';
+        return 'bg-primary/20 text-primary border-primary/40';
       case 'rejected':
-        return 'bg-destructive text-destructive-foreground';
+        return 'bg-destructive/15 text-destructive border-destructive/35';
       case 'pending':
-        return 'bg-warning text-warning-foreground';
+        return 'bg-pending/20 text-pending-foreground border-pending/40';
       default:
-        return 'bg-secondary text-secondary-foreground';
+        return 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700';
     }
   };
 
@@ -91,64 +84,67 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onClaim }) => {
   const isItemClaimed = item.status === 'claimed';
   const canClaim = user && user.id !== item.userId && !isItemClaimed && !userClaimForItem;
 
+  const categoryLabel = (item.category || 'general').toUpperCase();
+  const statusLabel = item.status.charAt(0).toUpperCase() + item.status.slice(1);
+  const typeLabel = item.type.charAt(0).toUpperCase() + item.type.slice(1);
+
   return (
-    <div className="glass-card overflow-hidden hover:shadow-soft transition-all duration-300 group rounded-lg">
-      {/* Image */}
+    <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-card transition-all duration-200 hover:scale-[1.01] hover:shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
+      <span className="absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-[11px] font-semibold tracking-wide text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+        {categoryLabel}
+      </span>
+
       {item.images.length > 0 && (
-        <div className="aspect-video relative overflow-hidden rounded-t-lg">
+        <div className="relative aspect-video overflow-hidden border-b border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-800">
           <img
             src={item.images[0]}
             alt={item.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
           />
           {item.images.length > 1 && (
-            <Badge 
-              variant="secondary" 
-              className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm"
-            >
+            <Badge className="absolute right-3 top-3 rounded-full border border-slate-300 bg-white/95 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200">
               +{item.images.length - 1} more
             </Badge>
           )}
         </div>
       )}
 
-      {/* Content */}
-      <div className="p-6 space-y-4">
-        {/* Header */}
+      <div className="space-y-4 p-4 pt-10 text-left sm:space-y-5 sm:p-5 sm:pt-11 md:p-6 md:pt-11">
         <div>
-          <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-          <p className="text-muted-foreground text-sm line-clamp-2">
-            {item.description}
+          <h3 className="mb-2 line-clamp-2 text-lg font-semibold leading-tight tracking-tight text-slate-900 sm:text-xl dark:text-slate-100">
+            {item.title}
+          </h3>
+          <p className="line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
+            {item.description || 'No additional description provided.'}
           </p>
         </div>
 
-        {/* Badges */}
         <div className="flex flex-wrap gap-2">
-          <Badge className={getStatusColor(item.status)}>
-            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+          <Badge className={`rounded-full border px-3 py-1 text-xs font-medium ${getStatusColor(item.status)}`}>
+            {statusLabel}
           </Badge>
-          <Badge variant="outline">{item.category}</Badge>
-          <Badge variant="outline">{item.type.charAt(0).toUpperCase() + item.type.slice(1)}</Badge>
+          <Badge className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            {typeLabel}
+          </Badge>
         </div>
 
-        {/* Details */}
-        <div className="space-y-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            <span>{item.location}</span>
+        <div className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span className="truncate">{item.location || 'Unknown location'}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span>
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70">
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span className="truncate">
               {item.type === 'lost' ? 'Lost' : 'Found'} on{' '}
-              {item.dateLostFound && !isNaN(new Date(item.dateLostFound).getTime()) 
-                ? new Date(item.dateLostFound).toLocaleDateString() 
+              {item.dateLostFound && !isNaN(new Date(item.dateLostFound).getTime())
+                ? new Date(item.dateLostFound).toLocaleDateString()
                 : 'Unknown date'}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            <span>
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70">
+            <User className="h-4 w-4 shrink-0" />
+            <span className="truncate">
               {item.createdAt && !isNaN(new Date(item.createdAt).getTime())
                 ? formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })
                 : 'Unknown time'}
@@ -156,21 +152,18 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onClaim }) => {
           </div>
         </div>
 
-        {/* Action Button */}
-      <div className="p-6 pt-4">
+        <div>
         {canClaim ? (
           <Button
-            variant="hero"
-            size="sm"
-            className="w-full water-drop"
+            variant="default"
+            className="w-full"
             onClick={() => onClaim?.(item.id)}
           >
             {item.type === 'lost' ? 'Found this item' : 'Claim this item'}
           </Button>
         ) : userClaimForItem ? (
           <Button
-            variant="destructive"
-            size="sm"
+            variant="warning"
             className="w-full"
             onClick={handleUnclaim}
           >
@@ -179,8 +172,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onClaim }) => {
           </Button>
         ) : isItemClaimed ? (
           <Button
-            variant="secondary"
-            size="sm"
+            variant="outline"
             className="w-full cursor-not-allowed"
             disabled
           >
@@ -188,16 +180,15 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onClaim }) => {
           </Button>
         ) : (
           <Button
-            variant="secondary"
-            size="sm"
+            variant="destructive"
             className="w-full cursor-not-allowed"
             disabled
           >
             Cannot Claim Own Item
           </Button>
         )}
+        </div>
       </div>
-      </div>
-    </div>
+    </article>
   );
 };

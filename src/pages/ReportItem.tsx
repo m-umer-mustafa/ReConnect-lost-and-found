@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useLostFound } from '@/context/LostFoundContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/context/AuthContext';
@@ -26,7 +25,6 @@ const CATEGORIES = [
 ];
 
 export const ReportItem: React.FC = () => {
-  const { addItem } = useLostFound();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -150,35 +148,36 @@ export const ReportItem: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto">
+    <div className={`min-h-screen ${formData.type === 'lost' ? 'report-mood-bg-lost' : 'report-mood-bg-found'}`}>
+      <div className="container mx-auto px-4 py-6 md:py-12">
+        <div className="neo-page-shell mx-auto max-w-3xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Report an Item</h1>
-          <p className="text-muted-foreground">
+        <div className="mb-7 text-center md:mb-9">
+          <h1 className="mb-2 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl dark:text-slate-100">Report an Item</h1>
+          <p className="text-slate-600 dark:text-slate-400">
             Help someone find their lost belongings or report something you found
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6 md:space-y-7">
           {/* Type Selection */}
-          <div className="glass-card p-6">
-            <h2 className="text-lg font-semibold mb-4">What would you like to report?</h2>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="glass-card p-4 sm:p-6">
+            <h2 className="mb-4 text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">What would you like to report?</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, type: 'lost' }))}
-                className={`p-6 rounded-lg border-2 transition-all duration-300 text-left ${
+                className={`neo-interactive rounded-xl border p-5 text-left transition-colors ${
                   formData.type === 'lost'
-                    ? 'border-destructive bg-destructive/10'
-                    : 'border-border hover:border-destructive/50'
+                    ? 'border-lost/50 bg-lost/15 dark:border-lost/40 dark:bg-lost/20'
+                    : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'
                 }`}
               >
-                <div className="w-12 h-12 bg-destructive/20 rounded-lg flex items-center justify-center mb-3">
-                  <X className="h-6 w-6 text-destructive" />
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                  <X className="h-6 w-6 text-slate-700 dark:text-slate-200" />
                 </div>
-                <h3 className="font-semibold mb-1">Lost Item</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="mb-1 font-semibold tracking-tight text-slate-900 dark:text-slate-100">Lost Item</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   I lost something and need help finding it
                 </p>
               </button>
@@ -186,17 +185,17 @@ export const ReportItem: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, type: 'found' }))}
-                className={`p-6 rounded-lg border-2 transition-all duration-300 text-left ${
+                className={`neo-interactive rounded-xl border p-5 text-left transition-colors ${
                   formData.type === 'found'
-                    ? 'border-success bg-success/10'
-                    : 'border-border hover:border-success/50'
+                    ? 'border-found/50 bg-found/15 dark:border-found/40 dark:bg-found/20'
+                    : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'
                 }`}
               >
-                <div className="w-12 h-12 bg-success/20 rounded-lg flex items-center justify-center mb-3">
-                  <Plus className="h-6 w-6 text-success" />
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                  <Plus className="h-6 w-6 text-slate-700 dark:text-slate-200" />
                 </div>
-                <h3 className="font-semibold mb-1">Found Item</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="mb-1 font-semibold tracking-tight text-slate-900 dark:text-slate-100">Found Item</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   I found something and want to return it
                 </p>
               </button>
@@ -204,11 +203,11 @@ export const ReportItem: React.FC = () => {
           </div>
 
           {/* Basic Information */}
-          <div className="glass-card p-6 space-y-6">
-            <h2 className="text-lg font-semibold">Basic Information</h2>
+          <div className="glass-card space-y-5 p-4 sm:p-6 sm:space-y-6">
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">Basic Information</h2>
             
             <div className="space-y-2">
-              <Label htmlFor="title">Item Title *</Label>
+              <Label htmlFor="title" className="text-slate-700 dark:text-slate-300">Item Title *</Label>
               <Input
                 id="title"
                 value={formData.title}
@@ -223,13 +222,13 @@ export const ReportItem: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
+              <Label htmlFor="description" className="text-slate-700 dark:text-slate-300">Description *</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleChange('description', e.target.value)}
                 placeholder="Provide a detailed description including color, size, brand, any unique features..."
-                className={`min-h-[100px] ${errors.description ? 'border-destructive' : ''}`}
+                className={`min-h-[100px] rounded-lg border border-input bg-slate-100/50 text-slate-900 placeholder:text-slate-500 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-slate-800/50 dark:text-slate-100 dark:placeholder:text-slate-400 ${errors.description ? 'border-destructive' : ''}`}
                 required
               />
               {errors.description && (
@@ -238,7 +237,7 @@ export const ReportItem: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
+              <Label htmlFor="category" className="text-slate-700 dark:text-slate-300">Category *</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => handleChange('category', value)}
@@ -262,11 +261,11 @@ export const ReportItem: React.FC = () => {
           </div>
 
           {/* Location and Date */}
-          <div className="glass-card p-6 space-y-6">
-            <h2 className="text-lg font-semibold">Where and When?</h2>
+          <div className="glass-card space-y-5 p-4 sm:p-6 sm:space-y-6">
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">Where and When?</h2>
             
             <div className="space-y-2">
-              <Label htmlFor="location">
+              <Label htmlFor="location" className="text-slate-700 dark:text-slate-300">
                 <MapPin className="inline h-4 w-4 mr-1" />
                 Location *
               </Label>
@@ -284,7 +283,7 @@ export const ReportItem: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date">
+              <Label htmlFor="date" className="text-slate-700 dark:text-slate-300">
                 <Calendar className="inline h-4 w-4 mr-1" />
                 Date {formData.type === 'lost' ? 'Lost' : 'Found'} *
               </Label>
@@ -304,17 +303,17 @@ export const ReportItem: React.FC = () => {
           </div>
 
           {/* Images */}
-          <div className="glass-card p-6 space-y-6">
-            <h2 className="text-lg font-semibold">
+          <div className="glass-card space-y-5 p-4 sm:p-6 sm:space-y-6">
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
               <Camera className="inline h-5 w-5 mr-2" />
               Photos (Optional)
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               Adding photos greatly increases the chances of a successful match.
             </p>
 
             {/* Upload Area */}
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center sm:p-8 dark:border-slate-700 dark:bg-slate-800/40">
               <input
                 type="file"
                 id="image-upload"
@@ -327,9 +326,9 @@ export const ReportItem: React.FC = () => {
                 htmlFor="image-upload"
                 className="cursor-pointer flex flex-col items-center space-y-2"
               >
-                <Upload className="h-8 w-8 text-muted-foreground" />
-                <p className="text-sm font-medium">Click to upload images</p>
-                <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB each</p>
+                <Upload className="h-8 w-8 text-slate-500 dark:text-slate-400" />
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Click to upload images</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">PNG, JPG up to 5MB each</p>
               </label>
             </div>
 
@@ -341,7 +340,7 @@ export const ReportItem: React.FC = () => {
                     <img
                       src={image}
                       alt={`Upload ${index + 1}`}
-                      className="w-full h-24 object-cover rounded-lg"
+                      className="h-24 w-full rounded-xl border border-slate-300 object-cover dark:border-slate-700"
                     />
                     <Button
                       type="button"
@@ -359,7 +358,7 @@ export const ReportItem: React.FC = () => {
           </div>
 
           {/* Submit */}
-          <div className="flex space-x-4">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:space-x-4 sm:space-y-0">
             <Button
               type="button"
               variant="outline"
@@ -370,9 +369,11 @@ export const ReportItem: React.FC = () => {
             </Button>
             <Button
               type="submit"
-              variant="hero"
+              variant="default"
               disabled={loading}
-              className="flex-1"
+              className={`flex-1 ${formData.type === 'lost'
+                ? 'bg-lost text-lost-foreground hover:bg-lost/90'
+                : 'bg-found text-found-foreground hover:bg-found/90'}`}
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -382,6 +383,7 @@ export const ReportItem: React.FC = () => {
             </Button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

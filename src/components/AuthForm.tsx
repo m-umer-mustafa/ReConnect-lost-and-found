@@ -213,13 +213,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
 
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="mx-auto w-full max-w-md">
       <div
-        className={`glass-card p-8 space-y-6 transition-all duration-500 ease-out ${
+        className={`glass-card space-y-5 p-5 transition-all duration-500 ease-out sm:space-y-6 sm:p-8 ${
           isSliding ? 'scale-95 opacity-90' : 'scale-100 opacity-100'
         }`}
         style={{
-          minHeight: showForgotPassword ? '350px' : isLogin ? '480px' : '580px',
+          minHeight: showForgotPassword ? '330px' : isLogin ? '440px' : '530px',
           borderRadius: '1rem',
         }}
       >
@@ -229,7 +229,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
               isSliding ? (isLogin ? 'translate-x-full' : '-translate-x-full') : 'translate-x-0'
             }`}
           >
-            <h1 className="text-3xl font-bold gradient-text">
+            <h1 className="text-2xl font-bold gradient-text sm:text-3xl">
               {isLogin ? 'Welcome Back' : 'Join ReConnect'}
             </h1>
             <p className="text-muted-foreground">
@@ -242,7 +242,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
-            <div className="space-y-2 animate-fade-in">
+            <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
